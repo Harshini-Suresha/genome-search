@@ -18,7 +18,7 @@ def bundled_datasets():
         return []
 
 alt.data_transformers.disable_max_rows()
-GITHUB, SITE_URL = "YOUR_GITHUB_USER/YOUR_REPO", "YOUR_SITE_URL"   # filled in by set_links.py
+GITHUB, SITE_URL = "Harshini-Suresha/genomequery", "https://harshini-suresha.github.io/genomequery"   # filled in by set_links.py
 BLUE, ORANGE, GREEN, SLATE, PLUM = "#0b63b5", "#e07a1f", "#1c8c6e", "#5b6b7c", "#8a4fb0"
 KIND_COLORS = alt.Scale(domain=['gc', 'kmer', 'align', 'motif', 'report'], range=[BLUE, GREEN, ORANGE, PLUM, SLATE])
 st.set_page_config(page_title="GenomeQuery Workbench", page_icon="🧬", layout="wide")
