@@ -7,11 +7,11 @@
 <meta name="description" content="Genome Search integrates k-mer indexing, trie search, dynamic-programming alignment, a dependency-aware concurrent scheduler and a relational store, with a reproducible benchmarking framework.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f0f9ff;--sky1:#e3f4fe;--sky2:#eef8fe;--sky3:#f9fcff;--haze:rgba(255,255,255,.92);--panel:#ffffff;--tint:#f0f8fe;--ink:#0b2239;--muted:#46647e;--line:#dcecf7;--shadow:0 1px 2px rgba(20,70,120,.05),0 8px 24px rgba(90,160,215,.12);
 --c1:#0b63b5;--c2:#e07a1f;--c3:#1c8c6e;--c4:#5b6b7c;--c5:#8a4fb0;--c6:#c2306a;
---serif:'Source Serif 4',Georgia,serif;--sans:'Source Sans 3',system-ui,sans-serif}
+--serif:'IBM Plex Serif',Georgia,serif;--sans:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace}
 @media(prefers-color-scheme:dark){:root{--bg:#0b1a2c;--sky1:#06101d;--sky2:#0a1a2e;--sky3:#102640;--haze:rgba(110,170,235,.14);--panel:#13263b;--tint:#1a3350;--ink:#e6f2fc;--muted:#9bb6cd;--line:#26405c;--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35);
 --c1:#5fb0f5;--c2:#f2a45c;--c3:#55cfa8;--c4:#a3b1c2;--c5:#c39be6;--c6:#f07aa8}}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
@@ -36,6 +36,8 @@ section{padding:48px 0;border-top:1px solid var(--line)}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:24px;margin-top:20px}
 @media(max-width:520px){.two{grid-template-columns:1fr}.wrap{padding:0 18px}nav{display:none}}
 figure{margin:20px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 16px 10px}
+figure table{margin-top:8px}
+figure .sc table{margin-top:8px}
 figure.f{margin-top:20px}
 figcaption{font-size:14.5px;color:var(--muted);margin-top:6px}
 figcaption b{color:var(--ink);font-weight:600}
@@ -66,9 +68,9 @@ input[type=range]{width:240px;accent-color:var(--c1)}
 .sys-in,.sys-spine{display:flex;align-items:center;gap:10px;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:14.5px;color:var(--muted);background:color-mix(in srgb,var(--panel) 72%,transparent)}
 .sys-in{justify-content:center;margin-bottom:14px}.sys-in b,.sys-spine b{color:var(--ink)}
 .sys-spine{justify-content:center;margin-top:14px;text-align:center}
-.sys-in .dot{font-family:ui-monospace,monospace;background:var(--tint);border-radius:6px;padding:1px 8px;color:var(--c3);font-weight:600}
+.sys-in .dot{font-family:var(--mono);background:var(--tint);border-radius:6px;padding:1px 8px;color:var(--c3);font-weight:600}
 @media(max-width:860px){.arch{flex-direction:column}.sys-link{flex:none;width:2px;height:26px;margin:4px auto;background:repeating-linear-gradient(180deg,var(--c1) 0 7px,transparent 7px 12px)}.sys-link::after{right:auto;left:50%;top:auto;bottom:-1px;transform:translateX(-50%) rotate(135deg)}}
-code,pre{font:13.5px/1.55 ui-monospace,Menlo,Consolas,monospace}
+code,pre{font:13.5px/1.55 var(--mono)}
 pre{background:var(--tint);padding:14px 16px;border-radius:8px;overflow:auto;margin:14px 0 0}
 table{border-collapse:collapse;width:100%;font-size:15px;margin-top:14px}
 th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}th{font-family:var(--serif);font-weight:600}
@@ -76,18 +78,18 @@ th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}th{fo
 footer{padding:36px 0 56px;color:var(--muted);font-size:14.5px;border-top:1px solid var(--line)}
 
 select,input[type=text]{font:15px var(--sans);padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
-input[type=text]{width:150px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em}
+input[type=text]{width:150px;font-family:var(--mono);letter-spacing:.06em}
 button{font:600 15px var(--sans);background:var(--c1);color:var(--panel);border:0;border-radius:6px;padding:8px 16px;cursor:pointer}
 button:disabled{opacity:.5}
 .tabs,.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
 .tabs button,.chips button{background:var(--tint);color:var(--ink);font-weight:500;padding:7px 13px}
 .tabs button[aria-selected=true],.chips button[aria-selected=true]{background:var(--c1);color:var(--panel)}
-.b{display:inline-grid;width:22px;height:22px;place-items:center;color:var(--bg);border-radius:4px;font:600 12px ui-monospace,monospace;margin:1px}
+.b{display:inline-grid;width:22px;height:22px;place-items:center;color:var(--bg);border-radius:4px;font:600 12px var(--mono);margin:1px}
 .align-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start;margin-top:8px}
 @media(max-width:920px){.align-grid{grid-template-columns:1fr}}
 .aln-card{background:var(--tint);border-radius:8px;padding:14px 14px}
 .aln-card h4{font:600 14px var(--serif);margin:0 0 8px}
-.aln-seq{font:600 13.5px/2 ui-monospace,Menlo,monospace;letter-spacing:1px;word-break:break-all}
+.aln-seq{font:600 13.5px/2 var(--mono);letter-spacing:1px;word-break:break-all}
 .aln-seq b{display:inline-block;min-width:22px;text-align:center;border-radius:4px;padding:0 2px;margin:1px}
 .aln-seq b.m{background:color-mix(in srgb,var(--c3) 28%,transparent);color:var(--ink)}
 .aln-seq b.x{background:color-mix(in srgb,var(--c2) 30%,transparent);color:var(--ink)}
@@ -99,10 +101,10 @@ button:disabled{opacity:.5}
 .bars .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
 @media(max-width:560px){.bars .r{grid-template-columns:1fr}.bars .v{text-align:left}}
 table.h{width:auto;border-collapse:separate;border-spacing:3px;margin:8px 0}
-table.h td,table.h th{border:0;padding:0;width:38px;height:34px;text-align:center;font:600 13.5px ui-monospace,monospace;border-radius:4px;background:var(--tint)}
+table.h td,table.h th{border:0;padding:0;width:38px;height:34px;text-align:center;font:600 13.5px var(--mono);border-radius:4px;background:var(--tint)}
 table.h th{background:transparent;color:var(--muted)}
 table.h td.pa{outline:2.5px solid var(--c2);outline-offset:-1px;color:var(--ink)}
-.al{font:15px/1.4 ui-monospace,monospace;white-space:pre;background:var(--tint);padding:10px 14px;border-radius:6px;overflow:auto;margin:8px 0 0}
+.al{font:15px/1.4 var(--mono);white-space:pre;background:var(--tint);padding:10px 14px;border-radius:6px;overflow:auto;margin:8px 0 0}
 .bd{display:inline-block;padding:2px 9px;border-radius:999px;font-size:13px;font-weight:600;color:var(--bg)}
 .bd.m{background:var(--c3)}.bd.s{background:var(--c2)}.bd.sim{background:var(--c5)}.bd.y{background:var(--c1)}
 .tile{cursor:pointer}.tile rect{fill:var(--panel);stroke:var(--line);stroke-width:1.5}.tile.on rect{stroke:var(--c1);stroke-width:3}
@@ -238,7 +240,7 @@ results(result_id PK, job_id FK, seq_id FK, position, score)</pre>
 <section id="datasets">
 <h2>Real example datasets</h2>
 <p>The workbench ships with real public-domain sequences in <code>app/data</code> (catalogued in <code>datasets.json</code>), selectable from the Data tab via “Real example”. Public-domain NCBI RefSeq records via the Biopython test suite; see <code>bench_real.py</code> for provenance.</p>
-<div class="sc"><table>
+<figure class="f"><div class="ft">Example datasets</div><div class="sc"><table>
 <thead><tr><th>Dataset</th><th>Accession</th><th>Sequences</th><th>Bases</th><th>GC</th></tr></thead>
 <tbody>
 <tr><td>Arabidopsis thaliana chloroplast (full)</td><td>NC_000932.1</td><td>1</td><td>154,478</td><td>0.363</td></tr>
@@ -246,8 +248,8 @@ results(result_id PK, job_id FK, seq_id FK, position, score)</pre>
 <tr><td>Chloroplast 10 kb demo subset</td><td>NC_000932.1-demo</td><td>1</td><td>10,000</td><td>0.302</td></tr>
 <tr><td>Yersinia pestis plasmid pPCP1 (full)</td><td>NC_005816.1</td><td>1</td><td>9,609</td><td>0.453</td></tr>
 </tbody>
-</table></div>
-<p class="meta">Tip: contrast the AT-rich chloroplast against the higher-GC plasmid in the workbench GC-against-length plot, or index the 10&nbsp;kb subset for an instant search demo.</p>
+</table></div></figure>
+<p class="meta" style="margin-top:14px">Tip: contrast the AT-rich chloroplast against the higher-GC plasmid in the workbench GC-against-length plot, or index the 10&nbsp;kb subset for an instant search demo.</p>
 </section>
 
 <section id="workbench">
