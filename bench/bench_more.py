@@ -1,4 +1,4 @@
-"""More GenomeQuery measurements. Run after bench.py and bench_extra.py:  python3 bench_more.py
+"""More Genome Search measurements. Run after bench.py and bench_extra.py:  python3 bench_more.py
 Adds to results.json: variance, qlen, kmem, dictscale, memcmp, heap, dbwrite."""
 import json, random, time, sqlite3, heapq, bisect, os, tempfile, tracemalloc
 from collections import defaultdict

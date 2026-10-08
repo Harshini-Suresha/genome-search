@@ -1,4 +1,4 @@
-"""GenomeQuery reference benchmarks. Run: python3 bench.py > results.json
+"""Genome Search reference benchmarks. Run: python3 bench.py > results.json
 Pure-Python reference implementations; swap in your own modules to re-measure."""
 import random, time, json, sys, heapq, sqlite3, tracemalloc, platform, os, bisect
 from collections import defaultdict, deque

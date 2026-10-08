@@ -1,4 +1,4 @@
-"""Extra GenomeQuery measurements. Run after bench.py:  python3 bench_extra.py
+"""Extra Genome Search measurements. Run after bench.py:  python3 bench_extra.py
 Reads results.json and adds: kdist, trie_depth, align_dist, seed, plans."""
 import json, random, sqlite3
 from collections import Counter, defaultdict

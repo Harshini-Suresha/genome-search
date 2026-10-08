@@ -1,4 +1,4 @@
-# GenomeQuery Workbench (Streamlit)
+# Genome Search Workbench (Streamlit)
 
 A working model of the system, not a copy of the website. It runs real code on your data.
 

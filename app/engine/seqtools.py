@@ -1,4 +1,4 @@
-"""Sequence utilities, k-mer index, trie and reference scan used by the GenomeQuery workbench."""
+"""Sequence utilities, k-mer index, trie and reference scan used by the Genome Search workbench."""
 import random, time, tracemalloc
 from collections import Counter
 

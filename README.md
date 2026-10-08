@@ -1,4 +1,4 @@
-# GenomeQuery
+# Genome Search
 
 Integrated project: static site (`index.html`), Streamlit workbench (`app/` with `engine/`), benchmarks (`bench/` + `bench_real.py`), notebooks (`notebooks/`), and real example data (`app/data/` with `datasets.json`).
 
@@ -16,4 +16,4 @@ To refresh the numbers: run the three scripts, then paste the contents of `bench
 into the `<script id="data" type="application/json">` block of `index.html`.
 
 ## Workbench
-`app/` is a Streamlit app that runs the system itself. `notebooks/` holds a Jupyter notebook (`genomequery.ipynb`) and a self-contained Colab notebook (`genomequery_colab.ipynb`). Launch steps are in `DEPLOY.md`; `set_links.py` puts every link into the site, app and notebooks.
+`app/` is a Streamlit app that runs the system itself. `notebooks/` holds a Jupyter notebook (`genome-search.ipynb`) and a self-contained Colab notebook (`genome-search-colab.ipynb`). Launch steps are in `DEPLOY.md`; `set_links.py` puts every link into the site, app and notebooks.

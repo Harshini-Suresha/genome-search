@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Fill in every link in one go.
 
-    python3 set_links.py --github yourname/genomequery --streamlit https://yourapp.streamlit.app --site https://genomequery.vercel.app
+    python3 set_links.py --github yourname/genome-search --streamlit https://yourapp.streamlit.app --site https://genome-search.vercel.app
 
 Replaces the YOUR_* placeholders in the website, the Streamlit app, both notebooks and the READMEs.
 Pass only the options you have; run it again later to add the rest."""
 import argparse, pathlib, sys
 
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-ap.add_argument('--github', help='GitHub user/repo, e.g. yourname/genomequery')
+ap.add_argument('--github', help='GitHub user/repo, e.g. yourname/genome-search')
 ap.add_argument('--streamlit', help='URL of the deployed Streamlit app')
 ap.add_argument('--site', help='URL of the deployed website (Vercel)')
 a = ap.parse_args()

@@ -4,8 +4,8 @@ Three things get launched, each in the place that suits it. Do them in this orde
 
 ## 1. Put the project on GitHub
 ```
-cd genomequery
-git init && git add . && git commit -m "GenomeQuery"
+cd genome-search
+git init && git add . && git commit -m "Genome Search"
 # create an empty repo on github.com, then:
 git branch -M main
 git remote add origin https://github.com/<you>/<repo>.git
@@ -25,7 +25,7 @@ Vercel cannot run Streamlit (it needs a long-lived server with websockets), so h
 Other hosts that work: Hugging Face Spaces (Streamlit template), Render, Fly.io.
 
 ## 4. Notebooks
-Nothing to deploy. `notebooks/genomequery_colab.ipynb` is self-contained and opens in Colab from the link; `notebooks/genomequery.ipynb` runs locally from the `notebooks/` folder.
+Nothing to deploy. `notebooks/genome-search-colab.ipynb` is self-contained and opens in Colab from the link; `notebooks/genome-search.ipynb` runs locally from the `notebooks/` folder.
 
 ## 5. Put every link everywhere
 ```

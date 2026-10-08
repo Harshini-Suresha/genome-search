@@ -1,4 +1,4 @@
-"""GenomeQuery Workbench: a working model of the system. Load sequences, index and search them,
+"""Genome Search Workbench: a working model of the system. Load sequences, index and search them,
 align pairs, schedule and execute a dependency graph on real workers, query the relational store,
 and benchmark everything on your own machine."""
 import os, time, json, pathlib
@@ -18,10 +18,10 @@ def bundled_datasets():
         return []
 
 alt.data_transformers.disable_max_rows()
-GITHUB, SITE_URL = "Harshini-Suresha/genomequery", "https://harshini-suresha.github.io/genomequery"   # filled in by set_links.py
+GITHUB, SITE_URL = "Harshini-Suresha/genome-search", "https://harshini-suresha.github.io/genome-search"   # filled in by set_links.py
 BLUE, ORANGE, GREEN, SLATE, PLUM = "#0b63b5", "#e07a1f", "#1c8c6e", "#5b6b7c", "#8a4fb0"
 KIND_COLORS = alt.Scale(domain=['gc', 'kmer', 'align', 'motif', 'report'], range=[BLUE, GREEN, ORANGE, PLUM, SLATE])
-st.set_page_config(page_title="GenomeQuery Workbench", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="Genome Search Workbench", page_icon="🧬", layout="wide")
 st.markdown("<style>.block-container{padding-top:2rem;max-width:1250px}h1,h2,h3{letter-spacing:-.01em}</style>", unsafe_allow_html=True)
 
 def show(chart):
@@ -46,7 +46,7 @@ def get_index(k):
     return ss.idx
 
 with st.sidebar:
-    st.title("🧬 GenomeQuery")
+    st.title("🧬 Genome Search")
     st.caption("Workbench: a working model of the system, not a mirror of the website. Everything here runs real code on your data and your machine.")
     st.metric("Sequences loaded", len(names)); st.metric("Residues", f"{sum(map(len, ss.seqs.values())):,}")
     st.metric("CPUs on this host", os.cpu_count())
@@ -55,7 +55,7 @@ with st.sidebar:
     ok = lambda v: not v.startswith("YOUR_")
     if ok(SITE_URL): st.link_button("Project website", SITE_URL)
     if ok(GITHUB):
-        st.link_button("Open in Colab", f"https://colab.research.google.com/github/{GITHUB}/blob/main/notebooks/genomequery_colab.ipynb")
+        st.link_button("Open in Colab", f"https://colab.research.google.com/github/{GITHUB}/blob/main/notebooks/genome-search-colab.ipynb")
         st.link_button("Source on GitHub", f"https://github.com/{GITHUB}")
 
 tabs = st.tabs(["1 · Data", "2 · Search", "3 · Align", "4 · Workflow engine", "5 · Database", "6 · Benchmark"])
@@ -320,4 +320,4 @@ with tabs[5]:
         st.download_button("Download CSV", d.to_csv(index=False), "align_benchmark.csv", key="bdl2")
 
 st.divider()
-st.caption(f"GenomeQuery workbench · questions or data requests: {CONTACT_EMAIL}")
+st.caption(f"Genome Search workbench · questions or data requests: {CONTACT_EMAIL}")
