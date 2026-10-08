@@ -83,6 +83,17 @@ button:disabled{opacity:.5}
 .tabs button,.chips button{background:var(--tint);color:var(--ink);font-weight:500;padding:7px 13px}
 .tabs button[aria-selected=true],.chips button[aria-selected=true]{background:var(--c1);color:var(--panel)}
 .b{display:inline-grid;width:22px;height:22px;place-items:center;color:var(--bg);border-radius:4px;font:600 12px ui-monospace,monospace;margin:1px}
+.align-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start;margin-top:8px}
+@media(max-width:920px){.align-grid{grid-template-columns:1fr}}
+.aln-card{background:var(--tint);border-radius:8px;padding:14px 14px}
+.aln-card h4{font:600 14px var(--serif);margin:0 0 8px}
+.aln-seq{font:600 13.5px/2 ui-monospace,Menlo,monospace;letter-spacing:1px;word-break:break-all}
+.aln-seq b{display:inline-block;min-width:22px;text-align:center;border-radius:4px;padding:0 2px;margin:1px}
+.aln-seq b.m{background:color-mix(in srgb,var(--c3) 28%,transparent);color:var(--ink)}
+.aln-seq b.x{background:color-mix(in srgb,var(--c2) 30%,transparent);color:var(--ink)}
+.aln-seq b.g{background:color-mix(in srgb,var(--c4) 25%,transparent);color:var(--muted)}
+.aln-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;font-size:13.5px}
+.aln-stats div{background:var(--panel);border-radius:6px;padding:6px 10px}.aln-stats b{display:block;font:600 18px var(--serif);color:var(--c1)}
 .bars .r{display:grid;grid-template-columns:190px 1fr 110px;gap:10px;align-items:center;margin:7px 0;font-size:14.5px}
 .bars .t{height:16px;background:var(--tint);border-radius:8px;overflow:hidden}.bars .t i{display:block;height:100%;border-radius:8px;background:var(--c1)}
 .bars .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
@@ -180,7 +191,7 @@ header.bar{background:color-mix(in srgb,var(--sky2) 72%,transparent);border-bott
 <figure class="f"><div class="ft">Alignment explorer</div>
 <div class="ctl"><label for="sa">Sequence A</label><input type="text" id="sa" value="GGTTGACTA" maxlength="14" spellcheck="false"><label for="sb">Sequence B</label><input type="text" id="sb" value="TGTTACGG" maxlength="14" spellcheck="false"></div>
 <div class="ctl"><label for="sm">Match <span class="num" id="smv"></span></label><input id="sm" type="range" min="1" max="5" value="3"><label for="sx">Mismatch <span class="num" id="sxv"></span></label><input id="sx" type="range" min="-4" max="0" value="-3"><label for="sg">Gap <span class="num" id="sgv"></span></label><input id="sg" type="range" min="-6" max="-1" value="-2"></div>
-<div class="sc" id="heat"></div><figcaption id="hn"></figcaption></figure>
+<div class="align-grid"><div class="sc" id="heat"></div><div class="aln-card"><h4>Traceback alignment</h4><div id="alnviz"></div><h4 style="margin-top:12px">Score along the path</h4><div id="alnwalk"></div></div></div><figcaption id="hn"></figcaption></figure>
 <div class="two">
 <figure><div class="ft">Score distribution by similarity</div><div id="ad"></div><figcaption id="adn"></figcaption></figure>
 <figure><div class="ft">Matrix cells filled per second</div><div id="cps"></div><figcaption id="cpsn"></figcaption></figure>
@@ -248,9 +259,6 @@ results(result_id PK, job_id FK, seq_id FK, position, score)</pre>
 <div><h3>Workflow engine</h3><p>Edit the task graph, break it with a cycle, then run it on threads or processes and see a real execution timeline with the critical path.</p></div>
 <div><h3>Database and benchmarks</h3><p>Run SQL against the schema, read query plans, toggle indexes, and time every method live.</p></div>
 </div>
-<pre>cd app
-pip install -r requirements.txt
-streamlit run app.py</pre>
 <div class="arch" id="links" style="margin-top:20px"></div>
 </section>
 
@@ -417,17 +425,27 @@ $('lrun').addEventListener('click',()=>{const b=$('lrun');b.disabled=true;$('liv
 // ---------- alignment explorer
 function swx(){const cl=v=>v.toUpperCase().replace(/[^ACGT]/g,'').slice(0,14),a=cl($('sa').value),b=cl($('sb').value),m=+$('sm').value,mm=+$('sx').value,g=+$('sg').value;
  $('smv').textContent='+'+m;$('sxv').textContent=mm;$('sgv').textContent=g;
- if(!a||!b){$('heat').innerHTML='<p class="note">Enter bases A, C, G or T in both boxes.</p>';return}
- const H=[],T=[];let best=0,bi=0,bj=0;
- for(let i=0;i<=a.length;i++){H.push(Array(b.length+1).fill(0));T.push(Array(b.length+1).fill(0))}
- for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){const d=H[i-1][j-1]+(a[i-1]===b[j-1]?m:mm),u=H[i-1][j]+g,l=H[i][j-1]+g,v=Math.max(0,d,u,l);H[i][j]=v;T[i][j]=v===0?0:v===d?1:v===u?2:3;if(v>best){best=v;bi=i;bj=j}}
- const path=new Set();let i=bi,j=bj,ra='',rb='',rm='';
- while(i>0&&j>0&&H[i][j]>0){path.add(i+','+j);const t=T[i][j];
-  if(t===1){ra=a[i-1]+ra;rb=b[j-1]+rb;rm=(a[i-1]===b[j-1]?'|':'x')+rm;i--;j--}else if(t===2){ra=a[i-1]+ra;rb='-'+rb;rm=' '+rm;i--}else{ra='-'+ra;rb=b[j-1]+rb;rm=' '+rm;j--}}
- let h='<table class="h"><tr><th></th><th></th>'+[...b].map(c=>`<th>${c}</th>`).join('')+'</tr>';
- for(let r=0;r<=a.length;r++){h+=`<tr><th>${r?a[r-1]:''}</th>`;for(let c=0;c<=b.length;c++){const v=H[r][c];h+=`<td class="${path.has(r+','+c)?'pa':''}" style="background:color-mix(in srgb,var(--c1) ${Math.round(v/(best||1)*72)}%,var(--tint))" title="${v}">${v}</td>`}h+='</tr>'}
- $('heat').innerHTML=h+'</table>';
- $('hn').innerHTML=`<b>Best local score ${best}</b> from ${a.length*b.length} scored cells (${a.length} × ${b.length}). The outlined path is the traceback; shading shows score.<div class="al">${ra}\n${rm}\n${rb}</div>`}
+  if(!a||!b){$('heat').innerHTML='<p class="note">Enter bases A, C, G or T in both boxes.</p>';$('alnviz').innerHTML='';$('alnwalk').innerHTML='';$('hn').innerHTML='';return}
+  const H=[],T=[];let best=0,bi=0,bj=0;
+  for(let i=0;i<=a.length;i++){H.push(Array(b.length+1).fill(0));T.push(Array(b.length+1).fill(0))}
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){const d=H[i-1][j-1]+(a[i-1]===b[j-1]?m:mm),u=H[i-1][j]+g,l=H[i][j-1]+g,v=Math.max(0,d,u,l);H[i][j]=v;T[i][j]=v===0?0:v===d?1:v===u?2:3;if(v>best){best=v;bi=i;bj=j}}
+  const path=new Set();let i=bi,j=bj,ra='',rb='',rm='';const walk=[];
+  while(i>0&&j>0&&H[i][j]>0){path.add(i+','+j);walk.push(H[i][j]);const t=T[i][j];
+   if(t===1){ra=a[i-1]+ra;rb=b[j-1]+rb;rm=(a[i-1]===b[j-1]?'|':'x')+rm;i--;j--}else if(t===2){ra=a[i-1]+ra;rb='-'+rb;rm=' '+rm;i--}else{ra='-'+ra;rb=b[j-1]+rb;rm=' '+rm;j--}}
+  walk.reverse();
+  let h='<table class="h"><tr><th></th><th></th>'+[...b].map(c=>`<th>${c}</th>`).join('')+'</tr>';
+  for(let r=0;r<=a.length;r++){h+=`<tr><th>${r?a[r-1]:''}</th>`;for(let c=0;c<=b.length;c++){const v=H[r][c];h+=`<td class="${path.has(r+','+c)?'pa':''}" style="background:color-mix(in srgb,var(--c1) ${Math.round(v/(best||1)*72)}%,var(--tint))" title="${v}">${v}</td>`}h+='</tr>'}
+  $('heat').innerHTML=h+'</table>';
+  const cls=(ch,k)=>{const c=ch==='-'?'g':(k==='|'?'m':(k===' '?'g':'x'));return `<b class="${c}">${ch}</b>`};
+  const rowA=[...ra].map((c,k)=>cls(c,rm[k])).join(''),rowB=[...rb].map((c,k)=>cls(c,rm[k])).join('');
+  const nm=[...rm].filter(c=>c==='|').length,nx=[...rm].filter(c=>c==='x').length,ng=[...rm].filter(c=>c===' ').length,L=ra.length||1;
+  $('alnviz').innerHTML=`<div class="aln-seq">${rowA}</div><div class="aln-seq" style="color:var(--muted)">${[...rm].map(c=>c==='|'?'|':c==='x'?'·':' ').join('').replace(/ /g,'&nbsp;')}</div><div class="aln-seq">${rowB}</div><div class="aln-stats"><div><b>${nm}</b>matches</div><div><b>${Math.round(nm/L*100)}%</b>identity</div><div><b>${nx}</b>mismatches</div><div><b>${ng}</b>gaps</div></div>`;
+  const W=300,Hh=90;let svg='';
+  if(walk.length>1){const mx=Math.max(...walk,1);const pts=walk.map((v,k)=>`${(k/(walk.length-1)*W).toFixed(1)},${(Hh-8-(v/mx)*(Hh-20)).toFixed(1)}`).join(' ');svg=`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Score along traceback"><polyline points="${pts}" fill="none" stroke="var(--c3)" stroke-width="2.4" stroke-linejoin="round"/>${walk.map((v,k)=>`<circle cx="${(k/(walk.length-1)*W).toFixed(1)}" cy="${(Hh-8-(v/mx)*(Hh-20)).toFixed(1)}" r="3" fill="var(--c3)"><title>step ${k+1}: ${v}</title></circle>`).join('')}</svg>`}
+  else if(walk.length===1){svg=`<svg viewBox="0 0 ${W} ${Hh}"><circle cx="${W/2}" cy="${Hh/2}" r="4" fill="var(--c3)"/><text x="${W/2}" y="${Hh-8}" text-anchor="middle">single-cell path: ${walk[0]}</text></svg>`}
+  else{svg='<p class="note">No positive-scoring path — try lowering the mismatch or gap penalty.</p>'}
+  $('alnwalk').innerHTML=svg;
+  $('hn').innerHTML=`<b>Best local score ${best}</b> from ${a.length*b.length} scored cells (${a.length} × ${b.length}). The outlined path is the traceback; shading shows score.`}
 ['sa','sb','sm','sx','sg'].forEach(k=>$(k).addEventListener('input',swx));swx();
 // ---------- sandbox
 const TL=[
@@ -537,7 +555,9 @@ $('vrn').innerHTML=`<b>Repeats differ.</b> Across ${V.runs} runs at ${fN(V.n)} b
   ['Colab notebook',gh&&`https://colab.research.google.com/github/${gh}/blob/main/notebooks/genome-search-colab.ipynb`,'Open in Google Colab; nothing to install'],
   ['Jupyter notebook',gh&&`https://github.com/${gh}/blob/main/notebooks/genome-search.ipynb`,'Run locally against the engine'],
   ['Source code',gh&&`https://github.com/${gh}`,'Site, workbench, notebooks and benchmarks']];
- $('links').innerHTML=L.map(l=>l[1]?`<a class="lk" href="${l[1]}" target="_blank" rel="noopener"><b>${l[0]} &rarr;</b><span>${l[2]}</span></a>`:`<div class="lk off"><b>${l[0]}</b><span>Link not set yet: run set_links.py</span></div>`).join('')})();
+  $('links').innerHTML=L.map(l=>l[1]?`<a class="lk" href="${l[1]}" target="_blank" rel="noopener"><b>${l[0]} &rarr;</b><span>${l[2]}</span></a>`:l[0]==='Streamlit workbench'?`<div class="lk"><b>${l[0]}</b><span>Run locally — no hosted link yet:</span><pre style="margin:10px 0 0">cd app
+pip install -r requirements.txt
+streamlit run app.py</pre></div>`:`<div class="lk off"><b>${l[0]}</b><span>Link not set yet: run set_links.py</span></div>`).join('')})();
 </script>
 </body>
 </html>
