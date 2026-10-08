@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GenomeQuery: genomic sequence search, scheduling and storage</title>
+<meta name="description" content="GenomeQuery integrates k-mer indexing, trie search, dynamic-programming alignment, a dependency-aware concurrent scheduler and a relational store, with a reproducible benchmarking framework.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f0f9ff;--sky1:#e3f4fe;--sky2:#eef8fe;--sky3:#f9fcff;--haze:rgba(255,255,255,.92);--panel:#ffffff;--tint:#f0f8fe;--ink:#0b2239;--muted:#46647e;--line:#dcecf7;--shadow:0 1px 2px rgba(20,70,120,.05),0 8px 24px rgba(90,160,215,.12);
+--c1:#0b63b5;--c2:#e07a1f;--c3:#1c8c6e;--c4:#5b6b7c;--c5:#8a4fb0;--c6:#c2306a;
+--serif:'Source Serif 4',Georgia,serif;--sans:'Source Sans 3',system-ui,sans-serif}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1a2c;--sky1:#06101d;--sky2:#0a1a2e;--sky3:#102640;--haze:rgba(110,170,235,.14);--panel:#13263b;--tint:#1a3350;--ink:#e6f2fc;--muted:#9bb6cd;--line:#26405c;--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35);
+--c1:#5fb0f5;--c2:#f2a45c;--c3:#55cfa8;--c4:#a3b1c2;--c5:#c39be6;--c6:#f07aa8}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--sky3);position:relative;color:var(--ink);font:17px/1.6 var(--sans)}
+:focus-visible{outline:3px solid var(--c2);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+header.bar{position:sticky;top:0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);z-index:5}
+header.bar .wrap{display:flex;justify-content:space-between;align-items:center;height:56px;gap:12px}
+.brand{font:600 20px var(--serif);color:var(--ink);text-decoration:none}
+nav a{margin-left:20px;color:var(--muted);text-decoration:none;font-size:15px;font-weight:500}nav a:hover{color:var(--ink)}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.15;margin:0 0 .45em;letter-spacing:-.01em}
+h1{font-size:clamp(38px,6vw,64px)}h2{font-size:clamp(26px,3.4vw,34px)}h3{font-size:19px}
+p{margin:0 0 1em;max-width:68ch}
+.hero{padding:64px 0 36px}.sub{font-size:21px;color:var(--muted);max-width:60ch}
+.meta{color:var(--muted);font-size:15px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);margin-top:32px;overflow:hidden}
+.kpi{padding:20px 22px;border-right:1px solid var(--line)}.kpi:last-child{border-right:0}
+.kpi b{display:block;font:600 34px var(--serif);color:var(--c1);font-variant-numeric:tabular-nums}
+.kpi span{font-size:14.5px;color:var(--muted);display:block;line-height:1.4}
+section{padding:48px 0;border-top:1px solid var(--line)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:24px;margin-top:20px}
+@media(max-width:520px){.two{grid-template-columns:1fr}.wrap{padding:0 18px}nav{display:none}}
+figure{margin:20px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 16px 10px}
+figure.f{margin-top:20px}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:6px}
+figcaption b{color:var(--ink);font-weight:600}
+.ft{font:600 16px var(--serif);margin-bottom:2px}
+.lg{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--muted);margin:4px 0 2px}
+.lg i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+svg{width:100%;height:auto;display:block}
+svg text{font:12px var(--sans);fill:var(--muted)}
+svg .ax{stroke:var(--line);stroke-width:1}svg .gr{stroke:var(--line);stroke-width:1;stroke-dasharray:2 3}
+.l{fill:none;stroke-width:2.4}.p{stroke:var(--panel);stroke-width:1.5}
+.s1{stroke:var(--c1);fill:var(--c1)}.s2{stroke:var(--c2);fill:var(--c2)}.s3{stroke:var(--c3);fill:var(--c3)}.s4{stroke:var(--c4);fill:var(--c4)}.s5{stroke:var(--c5);fill:var(--c5)}.s6{stroke:var(--c6);fill:var(--c6)}
+.l.d{stroke-dasharray:5 4}
+.ctl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 8px;font-size:15px}
+input[type=range]{width:240px;accent-color:var(--c1)}
+.num{font-variant-numeric:tabular-nums;font-weight:600}
+.arch{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:20px}
+.arch div{background:var(--tint);border-radius:8px;padding:16px 18px}.arch p{margin:0;font-size:15.5px}
+code,pre{font:13.5px/1.55 ui-monospace,Menlo,Consolas,monospace}
+pre{background:var(--tint);padding:14px 16px;border-radius:8px;overflow:auto;margin:14px 0 0}
+table{border-collapse:collapse;width:100%;font-size:15px;margin-top:14px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}th{font-family:var(--serif);font-weight:600}
+.sc{overflow-x:auto}
+footer{padding:36px 0 56px;color:var(--muted);font-size:14.5px;border-top:1px solid var(--line)}
+
+select,input[type=text]{font:15px var(--sans);padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:150px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em}
+button{font:600 15px var(--sans);background:var(--c1);color:var(--panel);border:0;border-radius:6px;padding:8px 16px;cursor:pointer}
+button:disabled{opacity:.5}
+.tabs,.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.tabs button,.chips button{background:var(--tint);color:var(--ink);font-weight:500;padding:7px 13px}
+.tabs button[aria-selected=true],.chips button[aria-selected=true]{background:var(--c1);color:var(--panel)}
+.b{display:inline-grid;width:22px;height:22px;place-items:center;color:var(--bg);border-radius:4px;font:600 12px ui-monospace,monospace;margin:1px}
+.bars .r{display:grid;grid-template-columns:190px 1fr 110px;gap:10px;align-items:center;margin:7px 0;font-size:14.5px}
+.bars .t{height:16px;background:var(--tint);border-radius:8px;overflow:hidden}.bars .t i{display:block;height:100%;border-radius:8px;background:var(--c1)}
+.bars .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+@media(max-width:560px){.bars .r{grid-template-columns:1fr}.bars .v{text-align:left}}
+table.h{width:auto;border-collapse:separate;border-spacing:3px;margin:8px 0}
+table.h td,table.h th{border:0;padding:0;width:38px;height:34px;text-align:center;font:600 13.5px ui-monospace,monospace;border-radius:4px;background:var(--tint)}
+table.h th{background:transparent;color:var(--muted)}
+table.h td.pa{outline:2.5px solid var(--c2);outline-offset:-1px;color:var(--ink)}
+.al{font:15px/1.4 ui-monospace,monospace;white-space:pre;background:var(--tint);padding:10px 14px;border-radius:6px;overflow:auto;margin:8px 0 0}
+.bd{display:inline-block;padding:2px 9px;border-radius:999px;font-size:13px;font-weight:600;color:var(--bg)}
+.bd.m{background:var(--c3)}.bd.s{background:var(--c2)}.bd.sim{background:var(--c5)}.bd.y{background:var(--c1)}
+.tile{cursor:pointer}.tile rect{fill:var(--panel);stroke:var(--line);stroke-width:1.5}.tile.on rect{stroke:var(--c1);stroke-width:3}
+.tile.no rect{stroke-dasharray:5 4;stroke:var(--c2)}
+.note{font-size:14.5px;color:var(--muted)}
+.step{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:760px){.step{grid-template-columns:1fr}}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+background:radial-gradient(900px 520px at 12% -4%,var(--haze),transparent 62%),radial-gradient(760px 460px at 88% 6%,var(--haze),transparent 60%),radial-gradient(1000px 500px at 50% 100%,var(--haze),transparent 65%),linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 52%,var(--sky3) 100%)}
+figure,.kpis{box-shadow:var(--shadow);border-color:transparent}
+.arch div{background:color-mix(in srgb,var(--panel) 72%,transparent);box-shadow:0 1px 2px rgba(20,70,120,.06)}
+section{border-top-color:color-mix(in srgb,var(--ink) 12%,transparent)}
+header.bar{background:color-mix(in srgb,var(--sky2) 72%,transparent);border-bottom-color:color-mix(in srgb,var(--ink) 10%,transparent)}
+.h2 td,.h2 th{width:78px}.h2 th:first-child{width:96px}.bd.d{background:var(--c4)}
+.lk{display:block;background:var(--tint);border-radius:8px;padding:16px 18px;text-decoration:none;color:var(--ink);box-shadow:0 1px 2px rgba(20,70,120,.06)}.lk b{display:block;font:600 17px var(--serif);color:var(--c1)}.lk span{font-size:14.5px;color:var(--muted)}a.lk:hover{box-shadow:var(--shadow)}.lk.off{opacity:.65;border:1px dashed var(--line)}.lk.off b{color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap">
+<a class="brand" href="#top">GenomeQuery</a>
+<nav aria-label="Sections"><a href="#search">Search</a><a href="#align">Alignment</a><a href="#sched">Scheduler</a><a href="#db">Database</a><a href="#datasets">Datasets</a><a href="#workbench">Workbench</a><a href="#method">Method</a><a href="#contact">Contact</a></nav>
+</div></header>
+
+<main id="top">
+<div class="wrap">
+<div class="hero">
+<h1>GenomeQuery</h1>
+<p class="sub">An integrated system for genomic sequence search, dependency-aware concurrent scheduling and relational data management, with a reproducible benchmarking framework.</p>
+<div class="kpis" id="kpis"></div>
+<p class="meta" style="margin-top:12px">Charts are interactive: hover for values, click a legend entry to hide a series. Figures come from the benchmark suite included with this site. See <a href="#method" style="color:var(--c1);font-weight:600">Method</a> for scope and limits.</p>
+</div>
+
+<section id="arch" style="border-top:0;padding-top:20px">
+<h2>System overview</h2>
+<p>GenomeQuery indexes, searches, stores and processes DNA and protein sequences. Algorithmic search, a workflow scheduler, a concurrent execution engine and a PostgreSQL store share one job model, so any component can be benchmarked in isolation or end to end.</p>
+<div class="arch">
+<div><h3>Search algorithms</h3><p>K-mer indexing, hash-table retrieval, trie prefix search and dynamic-programming alignment, each analysed for time and space complexity.</p></div>
+<div><h3>Workflow scheduler</h3><p>Jobs form a dependency graph. Topological sorting and a priority queue release independent tasks as soon as their inputs are ready.</p></div>
+<div><h3>Execution engine</h3><p>Multi-process and multi-threaded workers with synchronization primitives, inter-process communication and controlled resource allocation.</p></div>
+<div><h3>Relational store</h3><p>A normalized PostgreSQL schema for sequences, samples, jobs, execution metadata and results, with keys, constraints, transactions and indexes.</p></div>
+</div>
+<figure class="f"><div class="ft">Complexity explorer</div>
+<div class="ctl"><label for="cn">Input size n</label><input id="cn" type="range" min="2" max="7" step="0.25" value="5"><span class="num" id="cnv"></span></div>
+<div class="bars" id="cx"></div><figcaption>Steps needed for each growth rate at the chosen n. Bars are on a logarithmic scale; the time column assumes 100 million simple steps per second.</figcaption></figure>
+</section>
+
+<section id="search">
+<h2>Sequence search</h2>
+<p>A k-mer index moves the cost of searching from every query to a single build step. Lookup time stays flat as the reference grows, while a scan grows with it.</p>
+<div class="two">
+<figure><div class="ft">Query latency against reference size</div><div id="c1"></div><figcaption id="c1n"></figcaption></figure>
+<figure><div class="ft">Queries needed to repay the index build</div><div id="c2"></div><figcaption id="c2n"></figcaption></figure>
+<figure><div class="ft">Index memory</div><div id="c3"></div><figcaption id="c3n"></figcaption></figure>
+<figure><div class="ft">Choosing k: positions per k-mer</div><div id="c4"></div><figcaption id="c4n"></figcaption></figure>
+</div>
+<figure class="f"><div class="ft">Prefix search over fixed-length sequences</div><div id="c5"></div><figcaption id="c5n"></figcaption></figure>
+<div class="two">
+<figure><div class="ft">Break-even explorer</div><div class="ctl"><label for="bsz">Reference</label><select id="bsz"></select></div><div id="be"></div><figcaption id="ben"></figcaption></figure>
+<figure><div class="ft">Measure it on your device</div><div class="ctl"><label for="lsz">Reference</label><select id="lsz"><option value="100000">100k bases</option><option value="300000">300k bases</option><option value="1000000" selected>1M bases</option></select><button id="lrun" type="button">Run benchmark</button></div><div class="bars" id="live"><p class="note">Generates random DNA in your browser, then times a scan against a k-mer index, the same comparison as the chart on the left. Bars use a logarithmic scale.</p></div><figcaption id="lnote"></figcaption></figure>
+</div>
+<div class="two">
+<figure><div class="ft">Queries per second</div><div id="qps"></div><figcaption id="qpsn"></figcaption></figure>
+<figure><div class="ft">Occurrences per k-mer</div><div id="kd"></div><figcaption id="kdn"></figcaption></figure>
+</div>
+<figure class="f"><div class="ft">Seed sensitivity: does a k-mer survive mutation?</div><div class="sc" id="seed"></div><figcaption id="seedn"></figcaption></figure>
+<figure class="f"><div class="ft">Why a trie stops branching</div><div id="td"></div><figcaption id="tdn"></figcaption></figure>
+<div class="two">
+<figure><div class="ft">Effect of query length</div><div id="ql"></div><figcaption id="qln"></figcaption></figure>
+<figure><div class="ft">Index memory against k</div><div id="km"></div><figcaption id="kmn"></figcaption></figure>
+<figure><div class="ft">Hash table lookup cost</div><div id="ds"></div><figcaption id="dsn"></figcaption></figure>
+<figure><div class="ft">Memory added by each structure</div><div id="mc"></div><figcaption id="mcn"></figcaption></figure>
+</div>
+</section>
+
+<section id="align">
+<h2>Dynamic-programming alignment</h2>
+<p>Smith-Waterman local alignment fills an m by n matrix, so time grows with the product of the lengths. Keeping only two rows when the score alone is needed removes almost all of the memory cost.</p>
+<div class="two">
+<figure><div class="ft">Alignment time</div><div id="c6"></div><figcaption id="c6n"></figcaption></figure>
+<figure><div class="ft">Peak memory</div><div id="c7"></div><figcaption id="c7n"></figcaption></figure>
+</div>
+<figure class="f"><div class="ft">Alignment explorer</div>
+<div class="ctl"><label for="sa">Sequence A</label><input type="text" id="sa" value="GGTTGACTA" maxlength="14" spellcheck="false"><label for="sb">Sequence B</label><input type="text" id="sb" value="TGTTACGG" maxlength="14" spellcheck="false"></div>
+<div class="ctl"><label for="sm">Match <span class="num" id="smv"></span></label><input id="sm" type="range" min="1" max="5" value="3"><label for="sx">Mismatch <span class="num" id="sxv"></span></label><input id="sx" type="range" min="-4" max="0" value="-3"><label for="sg">Gap <span class="num" id="sgv"></span></label><input id="sg" type="range" min="-6" max="-1" value="-2"></div>
+<div class="sc" id="heat"></div><figcaption id="hn"></figcaption></figure>
+<div class="two">
+<figure><div class="ft">Score distribution by similarity</div><div id="ad"></div><figcaption id="adn"></figcaption></figure>
+<figure><div class="ft">Matrix cells filled per second</div><div id="cps"></div><figcaption id="cpsn"></figcaption></figure>
+</div>
+</section>
+
+<section id="sched">
+<h2>Dependency-aware scheduling</h2>
+<p>Each workflow is a directed acyclic graph. The scheduler keeps ready tasks in a priority queue and starts the longest first, which shortens the finishing time on limited workers.</p>
+<figure class="f"><div class="ft">Benchmark workflow: 32 tasks across six stages</div><div class="ctl"><button id="cpb" type="button" aria-pressed="false">Highlight critical path</button><span class="note" id="cpt"></span></div><div id="dag"></div><figcaption>Edge lengths are not to scale. Each task&rsquo;s duration was measured by running a real alignment of that stage&rsquo;s size.</figcaption></figure>
+<figure class="f"><div class="ft">Schedule on <span class="num" id="wv">4</span> workers</div>
+<div class="ctl"><label for="w">Workers</label><input id="w" type="range" min="1" max="12" value="4"><span id="gs" class="num"></span></div>
+<div class="lg" id="glg"></div><div id="gantt"></div><figcaption id="gn"></figcaption></figure>
+<div class="two">
+<figure><div class="ft">Speedup against workers</div><div id="c8"></div><figcaption id="c8n"></figcaption></figure>
+<figure><div class="ft">Scheduler overhead against graph size</div><div id="c9"></div><figcaption id="c9n"></figcaption></figure>
+</div>
+<div class="two">
+<figure><div class="ft">Where the time goes, by stage</div><div id="stb"></div><figcaption id="stbn"></figcaption></figure>
+<figure><div class="ft">Worker utilization</div><div id="ut"></div><figcaption id="utn"></figcaption></figure>
+</div>
+<div class="two">
+<figure><div class="ft">Priority queue cost</div><div id="hp"></div><figcaption id="hpn"></figcaption></figure>
+<figure><div class="ft">Scheduling policy</div><div id="pol"></div><figcaption id="poln"></figcaption></figure>
+</div>
+</section>
+
+<section id="db">
+<h2>Relational storage and indexing</h2>
+<p>Metadata queries filter on sample and sequence properties. Indexes turn those scans into lookups, and the gap widens with every row added.</p>
+<div class="two">
+<figure><div class="ft">Filter by sample</div><div id="c10"></div><figcaption id="c10n"></figcaption></figure>
+<figure><div class="ft">Join with filter and aggregate</div><div id="c11"></div><figcaption id="c11n"></figcaption></figure>
+</div>
+<figure class="f"><div class="ft">Write throughput</div><div id="dw"></div><figcaption id="dwn"></figcaption></figure>
+<figure class="f"><div class="ft">What the database does: query plans</div><div class="chips" id="pq" role="tablist" aria-label="Query"></div><pre id="sqlq" style="margin:0 0 12px"></pre><div class="two" id="plan" style="margin-top:0"></div><figcaption id="pln"></figcaption></figure>
+<pre>samples(sample_id PK, name)
+sequences(seq_id PK, sample_id FK, length, gc)
+jobs(job_id PK, seq_id FK, task, priority, status)
+executions(exec_id PK, job_id FK, started, finished, cpu_s, peak_mb)
+results(result_id PK, job_id FK, seq_id FK, position, score)</pre>
+</section>
+
+<section id="datasets">
+<h2>Real example datasets</h2>
+<p>The workbench ships with real public-domain sequences in <code>app/data</code> (catalogued in <code>datasets.json</code>), selectable from the Data tab via “Real example”. Public-domain NCBI RefSeq records via the Biopython test suite; see <code>bench_real.py</code> for provenance.</p>
+<div class="sc"><table>
+<thead><tr><th>Dataset</th><th>Accession</th><th>Sequences</th><th>Bases</th><th>GC</th></tr></thead>
+<tbody>
+<tr><td>Arabidopsis thaliana chloroplast (full)</td><td>NC_000932.1</td><td>1</td><td>154,478</td><td>0.363</td></tr>
+<tr><td>Chloroplast coding sequences (85 genes)</td><td>NC_000932.1-CDS</td><td>85</td><td>79,482</td><td>~0.37</td></tr>
+<tr><td>Chloroplast 10 kb demo subset</td><td>NC_000932.1-demo</td><td>1</td><td>10,000</td><td>0.302</td></tr>
+<tr><td>Yersinia pestis plasmid pPCP1 (full)</td><td>NC_005816.1</td><td>1</td><td>9,609</td><td>0.453</td></tr>
+</tbody>
+</table></div>
+<p class="meta">Tip: contrast the AT-rich chloroplast against the higher-GC plasmid in the workbench GC-against-length plot, or index the 10&nbsp;kb subset for an instant search demo.</p>
+</section>
+
+<section id="workbench">
+<h2>Run it yourself: workbench, notebooks and source</h2>
+<p>The charts above show measurements. The Streamlit workbench and the notebooks are the system itself: load your own FASTA, search it, align pairs, run a dependency graph on real workers, query the relational store and benchmark all of it on your own machine.</p>
+<div class="arch">
+<div><h3>Data and search</h3><p>Upload or generate sequences, build a k-mer index, and run exact, mismatch-tolerant or trie prefix searches with a hit map across every sequence.</p></div>
+<div><h3>Alignment</h3><p>Local and global alignment with editable scores, a scoring-matrix heatmap with traceback, and a dot plot.</p></div>
+<div><h3>Workflow engine</h3><p>Edit the task graph, break it with a cycle, then run it on threads or processes and see a real execution timeline with the critical path.</p></div>
+<div><h3>Database and benchmarks</h3><p>Run SQL against the schema, read query plans, toggle indexes, and time every method live.</p></div>
+</div>
+<pre>cd app
+pip install -r requirements.txt
+streamlit run app.py</pre>
+<div class="arch" id="links" style="margin-top:20px"></div>
+</section>
+
+<section id="contact">
+<h2>Contact</h2>
+<p>Questions, data requests or feedback: <a href="mailto:harshinisuresha7@gmail.com" style="color:var(--c1);font-weight:600">harshinisuresha7@gmail.com</a></p>
+</section>
+
+<section id="method">
+<h2>How the numbers were made</h2>
+<p>Every figure above comes from one small benchmark program that ran in a sandbox. Step through the program, inspect the sandbox, then see which results were measured directly and which were not.</p>
+<figure class="f"><div class="ft">The measurement pipeline</div><div class="tabs" id="tabs" role="tablist" aria-label="Pipeline steps"></div><div id="step" class="step"></div></figure>
+<div class="two">
+<figure><div class="ft">The sandbox</div><div id="box"></div><div id="boxd" style="font-size:15.5px;margin-top:6px"></div></figure>
+<figure><div class="ft">One core, many workers</div>
+<div class="ctl"><label for="rw">Workers</label><input id="rw" type="range" min="1" max="12" value="4"><span class="num" id="rwv"></span></div>
+<div class="bars" id="rb"></div><figcaption id="rn"></figcaption></figure>
+</div>
+<figure class="f"><div class="ft">Run-to-run variation</div><div id="vr"></div><figcaption id="vrn"></figcaption></figure>
+<figure class="f"><div class="ft">Provenance of every result</div><div class="chips" id="chips" role="tablist" aria-label="Filter by provenance"></div><div class="sc"><table><tbody id="prov"></tbody></table></div></figure>
+<p style="margin-top:18px">To publish your own measurements, run <code>python3 bench/bench.py &gt; results.json</code>, then <code>python3 bench_extra.py</code> and <code>python3 bench_more.py</code> from inside <code>bench/</code>, and paste the output into the <code>&lt;script id="data"&gt;</code> block of <code>index.html</code>. Every chart, caption and headline figure recomputes from that data.</p>
+</section>
+</div>
+</main>
+<footer><div class="wrap">GenomeQuery &middot; Contact: <a href="mailto:harshinisuresha7@gmail.com" style="color:inherit">harshinisuresha7@gmail.com</a></div></footer>
+
+<script id="data" type="application/json">{"env":{"python":"3.12.3","cpus":1,"platform":"x86_64"},"search":[{"n":10000,"naive_ms":0.8820750000211319,"build_ms":4.4714329999919755,"lookup_ms":0.00046299999212351395,"index_mb":1.91482},{"n":30000,"naive_ms":2.815820999984453,"build_ms":13.328291999982866,"lookup_ms":0.000515000010636868,"index_mb":6.098964},{"n":100000,"naive_ms":11.743104999993648,"build_ms":75.03562499999816,"lookup_ms":0.0005500000099800673,"index_mb":20.856088},{"n":300000,"naive_ms":28.927025999990974,"build_ms":330.08060800000294,"lookup_ms":0.0004799999828719592,"index_mb":57.790612},{"n":1000000,"naive_ms":101.75120499999935,"build_ms":1568.38639099999,"lookup_ms":0.000711000012643126,"index_mb":187.363944}],"ksweep":[{"k":6,"build_ms":58.75523000000271,"kmers":4096,"avg_bucket":73.240966796875},{"k":8,"build_ms":178.77014500001565,"kmers":64829,"avg_bucket":4.627450677937343},{"k":10,"build_ms":267.5879399999985,"kmers":260701,"avg_bucket":1.1507090498310324},{"k":12,"build_ms":431.40349199998695,"kmers":297224,"avg_bucket":1.0093027480957124},{"k":14,"build_ms":388.2296879999956,"kmers":299808,"avg_bucket":1.0005970487778846}],"prefix":[{"n":1000,"trie_us":3.270000007660201,"bisect_us":0.4359999934422376,"scan_us":80.76700001424797,"build_ms":10.338521000022638},{"n":5000,"trie_us":3.3100000109698158,"bisect_us":0.5180000073323754,"scan_us":395.65499997706866,"build_ms":292.44018999997934},{"n":20000,"trie_us":3.292999991799661,"bisect_us":0.5670000007285125,"scan_us":1695.8939999938138,"build_ms":971.528176999982},{"n":50000,"trie_us":3.3840000241980306,"bisect_us":1.513999990265802,"scan_us":4478.040999998711,"build_ms":1998.6532380000028}],"align":[{"len":100,"full_ms":2.681590999998207,"two_ms":2.6051659999950516,"full_mb":0.083888,"two_mb":0.001744,"cells":10000},{"len":200,"full_ms":10.854368999986264,"two_ms":10.659312000001364,"full_mb":0.33208,"two_mb":0.003344,"cells":40000},{"len":400,"full_ms":52.840996000014684,"two_ms":44.66928899998379,"full_mb":1.3084,"two_mb":0.006672,"cells":160000},{"len":800,"full_ms":208.24613900001054,"two_ms":193.11380300001701,"full_mb":6.645328,"two_mb":0.028752,"cells":640000},{"len":1200,"full_ms":539.7457569999915,"two_ms":455.44708799999967,"full_mb":23.381328,"two_mb":0.062448,"cells":1440000}],"sched_scale":[{"n":1000,"edges":2994,"ms":3.3282800000051793},{"n":5000,"edges":14994,"ms":17.188575999995237},{"n":20000,"edges":59994,"ms":76.1582879999878},{"n":50000,"edges":149994,"ms":198.53307200000359},{"n":100000,"edges":299994,"ms":367.4873120000086}],"workflow":{"tasks":32,"serial_ms":945.4364329999976,"nodes":[{"id":0,"stage":"fetch","dur_ms":5.965282000005345,"deps":[]},{"id":1,"stage":"qc","dur_ms":16.24776699998165,"deps":[0]},{"id":2,"stage":"qc","dur_ms":16.626868000003014,"deps":[0]},{"id":3,"stage":"qc","dur_ms":16.322371000001112,"deps":[0]},{"id":4,"stage":"qc","dur_ms":16.4238510000132,"deps":[0]},{"id":5,"stage":"qc","dur_ms":16.775534999993624,"deps":[0]},{"id":6,"stage":"qc","dur_ms":16.352292000021862,"deps":[0]},{"id":7,"stage":"index","dur_ms":24.597835999998097,"deps":[1,2]},{"id":8,"stage":"index","dur_ms":24.461618999993107,"deps":[2,3]},{"id":9,"stage":"index","dur_ms":24.248896999978342,"deps":[3,4]},{"id":10,"stage":"index","dur_ms":24.2905970000038,"deps":[4,5]},{"id":11,"stage":"index","dur_ms":24.295031000008294,"deps":[5,6]},{"id":12,"stage":"index","dur_ms":24.189231999997673,"deps":[6]},{"id":13,"stage":"align","dur_ms":44.568087999977024,"deps":[7,8]},{"id":14,"stage":"align","dur_ms":44.3554949999907,"deps":[8,9]},{"id":15,"stage":"align","dur_ms":45.856344000014815,"deps":[9,10]},{"id":16,"stage":"align","dur_ms":44.94671599999833,"deps":[10,11]},{"id":17,"stage":"align","dur_ms":45.24091900000826,"deps":[11,12]},{"id":18,"stage":"align","dur_ms":46.030414999989944,"deps":[12]},{"id":19,"stage":"align","dur_ms":44.8453719999975,"deps":[7,8]},{"id":20,"stage":"align","dur_ms":44.28785600001106,"deps":[8,9]},{"id":21,"stage":"align","dur_ms":44.335343000000194,"deps":[9,10]},{"id":22,"stage":"align","dur_ms":44.08914100000061,"deps":[10,11]},{"id":23,"stage":"align","dur_ms":44.22399699998891,"deps":[11,12]},{"id":24,"stage":"align","dur_ms":45.457362000007606,"deps":[12]},{"id":25,"stage":"call","dur_ms":24.06899399997542,"deps":[13,14]},{"id":26,"stage":"call","dur_ms":24.18952500002547,"deps":[13,14]},{"id":27,"stage":"call","dur_ms":24.286872000004678,"deps":[13,14]},{"id":28,"stage":"call","dur_ms":24.42959900000119,"deps":[13,14]},{"id":29,"stage":"call","dur_ms":24.482097000003478,"deps":[13,14]},{"id":30,"stage":"call","dur_ms":24.52721700001348,"deps":[13,14]},{"id":31,"stage":"report","dur_ms":10.417902999989792,"deps":[25,26,27,28,29,30]}],"makespan":[{"workers":1,"ms":945.4364329999976,"util":1.0},{"workers":2,"ms":490.02705700002025,"util":0.9646777861492233},{"workers":3,"ms":341.54552999999055,"util":0.9227041491852479},{"workers":4,"ms":257.09532099998,"util":0.9193442623952607},{"workers":6,"ms":171.5136929999801,"util":0.9187181272655077},{"workers":8,"ms":170.87996499998326,"util":0.6915939743141408},{"workers":12,"ms":126.70319399998675,"util":0.6218183372447162}]},"db":[{"rows":10000,"scan_ms":0.3052006499999038,"idx_ms":0.007588199999020162,"join_scan_ms":0.475631000000476,"join_idx_ms":0.18846650000057252},{"rows":100000,"scan_ms":3.344186500000035,"idx_ms":0.07389820000014424,"join_scan_ms":5.484435149999456,"join_idx_ms":2.412888649999445},{"rows":500000,"scan_ms":18.06325630000032,"idx_ms":0.39305560000002515,"join_scan_ms":23.25561984999922,"join_idx_ms":12.22736900000001}],"kdist":[{"k":8,"hist":[3233,7067,10652,12158,11347,8631,5549,3195,1718,778,328,182],"mean":4.626808353126253,"distinct":64838},{"k":10,"hist":[224546,32613,3109,208,12,0,0,0,0,0,0,0],"mean":1.1516499800374682,"distinct":260488}],"trie_depth":{"n":20000,"length":32,"nodes":[4,16,64,256,1024,4062,11580,17285,19249,19789,19952,19987,19998,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000]},"align_dist":[{"name":"Unrelated","hist":[0,0,0,14,98,37,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"mean":46.49333333333333},{"name":"10% mutated","hist":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,14,54,61,18,0,0],"mean":169.58},{"name":"30% mutated","hist":[0,0,0,0,0,0,0,1,5,22,43,44,24,9,1,1,0,0,0,0,0],"mean":110.64666666666666},{"name":"50% mutated","hist":[0,0,0,0,7,32,60,38,11,1,1,0,0,0,0,0,0,0,0,0,0],"mean":65.93333333333334}],"seed":{"ks":[6,8,10,12,14,16],"rates":[0,0.02,0.05,0.1,0.15,0.2],"recov":[[100.0,100.0,100.0,100.0,100.0,98.5],[100.0,100.0,100.0,99.0,99.0,89.5],[100.0,100.0,100.0,98.5,83.0,71.5],[100.0,100.0,99.0,89.5,73.5,48.5],[100.0,100.0,97.5,83.0,51.5,38.5],[100.0,100.0,93.0,68.0,44.0,22.5]],"cand":[25.716666666666665,2.4566666666666666,1.0833333333333333,1.01,1.0,1.0],"query_len":50,"ref_len":100000,"trials":200},"plans":{"filter":{"scan":["SCAN seqs"],"index":["SEARCH seqs USING INDEX i1 (sample_id=?)"]},"join":{"scan":["SCAN q","SEARCH s USING INTEGER PRIMARY KEY (rowid=?)","USE TEMP B-TREE FOR GROUP BY"],"index":["SEARCH q USING INDEX i2 (length>?)","SEARCH s USING INTEGER PRIMARY KEY (rowid=?)","USE TEMP B-TREE FOR GROUP BY"]},"sql":{"filter":"SELECT COUNT(*), AVG(gc) FROM seqs WHERE sample_id=7","join":"SELECT s.name, COUNT(*) FROM seqs q JOIN samples s USING(sample_id) WHERE q.length>4900 GROUP BY s.name"}},"variance":{"n":1000000,"runs":30,"scan_ms":[84.45183599999994,83.96943199999995,91.76151399999944,151.61720900000032,93.57448599999962,95.77626600000056,96.90432400000049,86.23626299999998,85.19934799999973,86.76523100000023,89.37052300000036,66.36331200000001,66.32914099999977,68.4770539999997,70.49283299999942,84.09796499999977,127.92689199999963,69.26975000000013,65.97506000000041,65.99066699999945,67.85015499999946,68.02965299999997,66.8514309999999,69.68447900000018,85.55661000000026,83.37330600000037,74.30979199999932,84.22901999999954,90.2869440000007,126.6929009999993],"lookup_ms":[0.00026364900000008795,0.0002577360000000084,0.0002632965000000098,0.0004629870000001368,0.00026156699999990707,0.0002619434999999726,0.0002546245000001335,0.00026680850000015965,0.0002607719999998537,0.0002621669999998133,0.00021248600000012274,0.00020164699999991598,0.00020067049999994424,0.0002023059999998189,0.00020183650000005215,0.0002802789999996058,0.0003834229999997163,0.00020060649999997793,0.00020006800000027525,0.0002046804999999985,0.0002291705000003752,0.00021585999999995664,0.00020633349999998885,0.00020441749999999814,0.0004420599999996888,0.0002016465000003187,0.00020650399999988522,0.000271299500000044,0.00027139050000002385,0.0005065294999999637]},"qlen":[{"m":12,"scan_ms":27.537077999999937,"lookup_ms":0.0005097269999998488},{"m":24,"scan_ms":29.067806000000473,"lookup_ms":0.000270914000000122},{"m":50,"scan_ms":27.2077950000007,"lookup_ms":0.0002699784999999899},{"m":100,"scan_ms":27.610058999999687,"lookup_ms":0.00028206949999987074},{"m":200,"scan_ms":28.178844999999342,"lookup_ms":0.0002680349999999443}],"kmem":[{"k":6,"mb":12.738543},{"k":8,"mb":21.591286},{"k":10,"mb":53.536037},{"k":12,"mb":59.199614},{"k":14,"mb":60.149779}],"dictscale":[{"n":1000,"ns":53.99809000000033},{"n":10000,"ns":55.60714999999661},{"n":100000,"ns":209.79419500000594},{"n":1000000,"ns":476.1382700000016}],"memcmp":[{"name":"List of strings","mb":0.160056},{"name":"Sorted list","mb":0.240048},{"name":"Hash table","mb":0.968132},{"name":"Trie","mb":92.027176}],"heap":[{"n":1000,"us":0.2601785400000267},{"n":10000,"us":0.3646112799999912},{"n":100000,"us":0.8420353999999719},{"n":1000000,"us":2.0789854999999946}],"dbwrite":[{"name":"One commit per row","rows":2000,"per_s":1679.035585936066},{"name":"One transaction","rows":100000,"per_s":1449593.0332790697},{"name":"One transaction, 2 indexes","rows":100000,"per_s":397154.77524703566}]}</script>
+<script>
+const GITHUB='YOUR_GITHUB_USER/YOUR_REPO',STREAMLIT_URL='YOUR_STREAMLIT_URL'; /* run set_links.py to fill these in */
+const D=JSON.parse(document.getElementById('data').textContent);
+const $=s=>document.getElementById(s);
+const fT=ms=>ms<1?(+(ms*1000).toPrecision(2))+' µs':ms<1000?(+ms.toPrecision(3))+' ms':(ms/1000).toFixed(2)+' s';
+const fN=n=>n>=1e6?(n/1e6)+'M':n>=1e3?(n/1e3)+'k':''+n;
+const fX=v=>v>=100?Math.round(v).toLocaleString():(+v.toPrecision(3))+'';
+const nice=x=>{const e=Math.pow(10,Math.floor(Math.log10(x))),f=x/e;return(f<=1?1:f<=2?2:f<=5?5:10)*e};
+const CH={};function tg(id,j){const o=CH[id];o.hide[j]=!o.hide[j];chart(id,o)}
+function chart(id,o){CH[id]=o;o.hide=o.hide||{};
+ const W=640,H=300,m={l:66,r:20,t:12,b:48},iw=W-m.l-m.r,ih=H-m.t-m.b,bar=o.type==='bar',n=o.x.length;
+ const all=o.series.flatMap(s=>s.y).filter(v=>v>0);let y0,y1;
+ if(o.ylog){y0=Math.pow(10,Math.floor(Math.log10(Math.min(...all))));y1=Math.pow(10,Math.ceil(Math.log10(Math.max(...all))));if(y1<=y0)y1=y0*10}
+ else{y0=0;const mx=Math.max(...all),st=nice(mx/5);y1=Math.ceil(mx/st)*st}
+ const L=Math.log10,yS=v=>m.t+ih-(o.ylog?(L(v)-L(y0))/(L(y1)-L(y0)):(v-y0)/(y1-y0))*ih;
+ const xmin=Math.min(...o.x),xmax=Math.max(...o.x);
+ const xS=bar?i=>m.l+iw*(i+.5)/n:v=>m.l+(o.xlog?(L(v)-L(xmin))/(L(xmax)-L(xmin)):(v-xmin)/(xmax-xmin))*(iw-0)*1;
+ let t=[];
+ if(o.ylog){const d=L(y1)-L(y0);for(let e=L(y0);e<=L(y1)+1e-9;e++)[1,3].forEach(k=>{if(k==3&&d>3)return;const v=k*Math.pow(10,e);if(v<=y1*1.0001)t.push(v)})}
+ else{const st=(y1-y0)/5;for(let i=0;i<=5;i++)t.push(y0+i*st)}
+ const yf=o.yf||fX;
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.title}">`;
+ t.forEach(v=>{s+=`<line class="gr" x1="${m.l}" x2="${W-m.r}" y1="${yS(v)}" y2="${yS(v)}"/><text x="${m.l-8}" y="${yS(v)+4}" text-anchor="end">${yf(v)}</text>`});
+ s+=`<line class="ax" x1="${m.l}" x2="${W-m.r}" y1="${m.t+ih}" y2="${m.t+ih}"/>`;
+ const xf=o.xf||String;o.x.forEach((v,i)=>{const x=bar?xS(i):xS(v);s+=`<text x="${x}" y="${m.t+ih+18}" text-anchor="middle">${xf(v)}</text>`});
+ s+=`<text x="${m.l+iw/2}" y="${H-6}" text-anchor="middle">${o.xl||''}</text><text transform="translate(14 ${m.t+ih/2}) rotate(-90)" text-anchor="middle">${o.yl||''}</text>`;
+ const k=o.series.length;
+ o.series.forEach((se,j)=>{
+  if(o.hide[j])return;
+  if(bar){const bw=Math.min(34,iw/n*.72/k);se.y.forEach((v,i)=>{const cx=xS(i)-bw*k/2+j*bw,y=yS(v);s+=`<rect class="${se.c}" x="${cx}" y="${y}" width="${bw-2}" height="${m.t+ih-y}" rx="2"><title>${se.n}, ${xf(o.x[i])}: ${yf(v)}</title></rect>`})}
+  else{s+=`<path class="l ${se.c} ${se.d?'d':''}" d="${se.y.map((v,i)=>(i?'L':'M')+xS(o.x[i]).toFixed(1)+' '+yS(v).toFixed(1)).join('')}"/>`;
+   if(!se.nodots)se.y.forEach((v,i)=>{s+=`<circle class="p ${se.c}" cx="${xS(o.x[i])}" cy="${yS(v)}" r="4"><title>${se.n}, ${xf(o.x[i])}: ${yf(v)}</title></circle>`})}
+ });
+ s+='</svg>';
+ const lg=k>1?`<div class="lg">${o.series.map((se,j)=>`<span role="button" tabindex="0" style="cursor:pointer;opacity:${o.hide[j]?.4:1}" onclick="tg('${id}',${j})" onkeydown="if(event.key==='Enter')tg('${id}',${j})"><i style="background:var(--c${se.c.slice(1)})"></i>${se.n}</span>`).join('')}</div>`:'';
+ $(id).innerHTML=lg+s;
+}
+const S=D.search,last=S[S.length-1];
+const stages=['fetch','qc','index','align','call','report'],SC={};stages.forEach((s,i)=>SC[s]='s'+(i+1));
+function sched(nodes,w,pol){const ch={},ind={},by={};nodes.forEach(n=>{by[n.id]=n;ind[n.id]=n.deps.length;n.deps.forEach(d=>(ch[d]=ch[d]||[]).push(n.id))});
+ let ready=nodes.filter(n=>!n.deps.length).map(n=>n.id);const free=[...Array(w).keys()],run=[],out=[];let t=0;
+ while(ready.length||run.length){if(pol!=='fifo')ready.sort((a,b)=>pol==='spt'?by[a].dur_ms-by[b].dur_ms:by[b].dur_ms-by[a].dur_ms);
+  while(ready.length&&free.length){const id=ready.shift(),o={id,lane:free.shift(),s:t,e:t+by[id].dur_ms,stage:by[id].stage};out.push(o);run.push(o)}
+  run.sort((a,b)=>a.e-b.e);const f=run.shift();t=f.e;free.push(f.lane);free.sort((a,b)=>a-b);(ch[f.id]||[]).forEach(c=>{if(--ind[c]===0)ready.push(c)})}
+ return{tasks:out,make:t}}
+const WF=D.workflow,total=WF.nodes.reduce((a,n)=>a+n.dur_ms,0);
+const dp={};WF.nodes.forEach(n=>{dp[n.id]=n.dur_ms+Math.max(0,...n.deps.map(d=>dp[d]))});const cp=Math.max(...Object.values(dp));
+const WS=[1,2,3,4,6,8,12],sp=WS.map(w=>total/sched(WF.nodes,w).make);
+const lastDb=D.db[D.db.length-1],al=D.align[D.align.length-1];
+$('kpis').innerHTML=[
+ [fX(last.naive_ms/last.lookup_ms)+'×',`faster per query than a scan at ${fN(last.n)} bases`],
+ [fX(al.full_mb/al.two_mb)+'×',`less alignment memory with two-row scoring at ${fN(al.len)} × ${fN(al.len)}`],
+ [sp[3].toFixed(1)+'×',`workflow speedup on 4 workers (critical-path limit ${(total/cp).toFixed(1)}×)`],
+ [fX(lastDb.scan_ms/lastDb.idx_ms)+'×',`faster metadata lookup with an index at ${fN(lastDb.rows)} rows`]
+].map(k=>`<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join('');
+const xs=S.map(r=>r.n);
+chart('c1',{title:'Query latency',x:xs,xlog:1,ylog:1,xf:fN,yf:fT,xl:'Reference length (bases)',yl:'Time per operation',series:[
+ {n:'Index build (once)',c:'s3',y:S.map(r=>r.build_ms)},{n:'Scan per query',c:'s4',y:S.map(r=>r.naive_ms)},{n:'Index lookup per query',c:'s1',y:S.map(r=>r.lookup_ms)}]});
+$('c1n').innerHTML=`<b>Lookup stays near ${fT(last.lookup_ms)}</b> at every size, while a scan reaches ${fT(last.naive_ms)} at ${fN(last.n)} bases. Both axes are logarithmic.`;
+const be=S.map(r=>r.build_ms/(r.naive_ms-r.lookup_ms));
+chart('c2',{title:'Break-even queries',type:'bar',x:xs,xf:fN,yf:v=>Math.round(v),xl:'Reference length (bases)',yl:'Queries',series:[{n:'Break-even',c:'s2',y:be}]});
+$('c2n').innerHTML=`<b>The index pays for itself after about ${Math.ceil(be[be.length-1])} queries</b> at ${fN(last.n)} bases, and sooner on smaller references.`;
+chart('c3',{title:'Index memory',type:'bar',x:xs,xf:fN,yf:v=>v+' MB',xl:'Reference length (bases)',yl:'Peak memory',series:[{n:'Index',c:'s6',y:S.map(r=>r.index_mb)}]});
+$('c3n').innerHTML=`<b>Memory grows linearly</b> at roughly ${Math.round(last.index_mb*1e6/last.n)} bytes per base in this Python implementation. A compact encoding in a lower-level language would shrink it considerably.`;
+const K=D.ksweep;
+chart('c4',{title:'Positions per k-mer',x:K.map(r=>r.k),ylog:1,yf:v=>fX(v),xl:'k (300k-base reference)',yl:'Average positions per k-mer',series:[{n:'Average bucket size',c:'s5',y:K.map(r=>r.avg_bucket)}]});
+$('c4n').innerHTML=`<b>Small k floods each bucket</b> (${fX(K[0].avg_bucket)} positions at k=${K[0].k}); beyond k=${K[2].k} buckets hold about one position, and a longer k only adds build cost.`;
+const P=D.prefix,px=P.map(r=>r.n);
+chart('c5',{title:'Prefix search',x:px,xlog:1,ylog:1,xf:fN,yf:fT,xl:'Sequences stored',yl:'Time per prefix query',series:[
+ {n:'Linear scan',c:'s4',y:P.map(r=>r.scan_us/1000)},{n:'Trie',c:'s1',y:P.map(r=>r.trie_us/1000)},{n:'Sorted array + binary search',c:'s2',y:P.map(r=>r.bisect_us/1000)}]});
+$('c5n').innerHTML=`<b>Trie lookup time is independent of dataset size</b> (about ${fT(P[0].trie_us/1000)} throughout), and a scan grows linearly. In this CPython build a sorted array answers faster still, and the trie takes ${fT(P[P.length-1].build_ms)} to build at ${fN(P[P.length-1].n)} sequences. The trie earns its place when prefixes are extended incrementally.`;
+const A=D.align,ax=A.map(r=>r.len);
+chart('c6',{title:'Alignment time',x:ax,yf:fT,xl:'Sequence length (both sequences)',yl:'Time',series:[{n:'Full matrix',c:'s3',y:A.map(r=>r.full_ms)},{n:'Two rows',c:'s1',y:A.map(r=>r.two_ms)}]});
+$('c6n').innerHTML=`<b>Quadratic growth:</b> doubling the length from ${A[2].len} to ${A[3].len} multiplies the time by ${(A[3].two_ms/A[2].two_ms).toFixed(1)}.`;
+chart('c7',{title:'Alignment memory',x:ax,ylog:1,yf:v=>(+v.toPrecision(2))+' MB',xl:'Sequence length (both sequences)',yl:'Peak memory',series:[{n:'Full matrix',c:'s3',y:A.map(r=>r.full_mb)},{n:'Two rows',c:'s1',y:A.map(r=>r.two_mb)}]});
+$('c7n').innerHTML=`<b>Two-row scoring uses ${fX(al.full_mb/al.two_mb)}× less memory</b> at length ${fN(al.len)}. Recovering the alignment path itself needs the full matrix, or Hirschberg&rsquo;s divide-and-conquer.`;
+// DAG
+const cpn=new Set(),cpe=new Set(),cpl=[];{let cur=WF.nodes.reduce((a,n)=>dp[n.id]>dp[a.id]?n:a,WF.nodes[0]);while(cur){cpn.add(cur.id);cpl.unshift(cur);if(!cur.deps.length)break;const pd=cur.deps.reduce((a,d)=>dp[d]>dp[a]?d:a,cur.deps[0]);cpe.add(pd+'>'+cur.id);cur=WF.nodes.find(n=>n.id===pd)}}
+let hl=false;
+function dag(){const cols={};WF.nodes.forEach(n=>(cols[n.stage]=cols[n.stage]||[]).push(n));const W=900,H=250,pos={};
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Task graph">`;
+ stages.forEach((st,i)=>{const c=cols[st],x=80+i*(W-160)/5;c.forEach((n,j)=>pos[n.id]=[x,H/2+(j-(c.length-1)/2)*(c.length>1?Math.min(34,(H-60)/(c.length-1)):0)]);s+=`<text x="${x}" y="${H-6}" text-anchor="middle">${st}</text>`});
+ WF.nodes.forEach(n=>n.deps.forEach(d=>{const on=hl&&cpe.has(d+'>'+n.id);s+=`<line x1="${pos[d][0]}" y1="${pos[d][1]}" x2="${pos[n.id][0]}" y2="${pos[n.id][1]}" stroke="${on?'var(--c2)':'var(--line)'}" stroke-width="${on?4:1.3}" opacity="${hl&&!on?.5:1}"/>`}));
+ WF.nodes.forEach(n=>{const on=hl&&cpn.has(n.id);s+=`<circle class="${SC[n.stage]} p" cx="${pos[n.id][0]}" cy="${pos[n.id][1]}" r="${on?9:7}" opacity="${hl&&!on?.4:1}" ${on?'style="stroke:var(--c2);stroke-width:3"':''}><title>${n.stage}-${n.id}: ${fT(n.dur_ms)}</title></circle>`});
+ $('dag').innerHTML=s+'</svg>';$('cpb').setAttribute('aria-pressed',hl);$('cpb').textContent=hl?'Hide critical path':'Highlight critical path';
+ $('cpt').innerHTML=hl?`Critical path: ${cpl.length} tasks, ${fT(cp)}. No schedule can finish sooner, however many workers run.`:''}
+$('cpb').addEventListener('click',()=>{hl=!hl;dag()});dag();
+$('glg').innerHTML=stages.map(s=>`<span><i style="background:var(--c${SC[s].slice(1)})"></i>${s}</span>`).join('');
+function gantt(){const w=+$('w').value,r=sched(WF.nodes,w),W=900,rh=24,m={l:60,t:6,b:30},H=m.t+w*rh+m.b,sx=v=>m.l+v/r.make*(W-m.l-14);
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Schedule on ${w} workers">`;
+ for(let l=0;l<w;l++)s+=`<text x="${m.l-8}" y="${m.t+l*rh+16}" text-anchor="end">worker ${l+1}</text><line class="gr" x1="${m.l}" x2="${W-14}" y1="${m.t+(l+1)*rh}" y2="${m.t+(l+1)*rh}"/>`;
+ r.tasks.forEach(t=>s+=`<rect class="${SC[t.stage]}" x="${sx(t.s)}" y="${m.t+t.lane*rh+3}" width="${Math.max(1.5,sx(t.e)-sx(t.s)-1)}" height="${rh-6}" rx="2" stroke="none"><title>${t.stage}-${t.id}: ${fT(t.e-t.s)}</title></rect>`);
+ for(let i=0;i<=4;i++){const v=r.make*i/4;s+=`<text x="${sx(v)}" y="${H-8}" text-anchor="middle">${fT(v)}</text>`}
+ $('gantt').innerHTML=s+'</svg>';$('wv').textContent=w;
+ $('gs').textContent=`${fT(r.make)} total`;
+ $('gn').innerHTML=`<b>${(total/r.make).toFixed(1)}× faster than serial</b> (${fT(total)}), with ${(100*total/(w*r.make)).toFixed(0)}% of worker time busy. The critical path of ${fT(cp)} sets the floor. Times are simulated from measured task durations.`}
+$('w').addEventListener('input',gantt);gantt();
+chart('c8',{title:'Speedup',x:WS,yf:v=>v+'×',xl:'Workers',yl:'Speedup over serial',series:[{n:'Simulated schedule',c:'s1',y:sp},{n:'Upper bound',c:'s4',d:1,nodots:1,y:WS.map(w=>Math.min(w,total/cp))}]});
+$('c8n').innerHTML=`<b>Near-linear up to 6 workers.</b> It stalls at 8 because the 12-task alignment stage still needs two waves, then reaches ${sp[6].toFixed(1)}× at 12 workers against a critical-path limit of ${(total/cp).toFixed(1)}×.`;
+const Q=D.sched_scale;
+chart('c9',{title:'Scheduler overhead',x:Q.map(r=>r.n+r.edges),yf:fT,xf:fN,xl:'Tasks plus dependencies (V + E)',yl:'Time to order the whole graph',series:[{n:'Topological sort with priority queue',c:'s2',y:Q.map(r=>r.ms)}]});
+$('c9n').innerHTML=`<b>Near-linear in V + E:</b> about ${(Q[Q.length-1].ms*1000/(Q[Q.length-1].n+Q[Q.length-1].edges)).toFixed(2)} µs per task or dependency, so a graph of ${fN(Q[Q.length-1].n)} tasks orders in ${fT(Q[Q.length-1].ms)}.`;
+const B=D.db,bx=B.map(r=>r.rows);
+chart('c10',{title:'Filter query',x:bx,xlog:1,ylog:1,xf:fN,yf:fT,xl:'Rows in sequences table',yl:'Time per query',series:[{n:'Full scan',c:'s4',y:B.map(r=>r.scan_ms)},{n:'With index',c:'s1',y:B.map(r=>r.idx_ms)}]});
+$('c10n').innerHTML=`<b>${fX(lastDb.scan_ms/lastDb.idx_ms)}× faster at ${fN(lastDb.rows)} rows.</b> The indexed query grows slowly because it touches only matching rows.`;
+chart('c11',{title:'Join query',x:bx,xlog:1,ylog:1,xf:fN,yf:fT,xl:'Rows in sequences table',yl:'Time per query',series:[{n:'No index',c:'s4',y:B.map(r=>r.join_scan_ms)},{n:'With index',c:'s1',y:B.map(r=>r.join_idx_ms)}]});
+$('c11n').innerHTML=`<b>${(lastDb.join_scan_ms/lastDb.join_idx_ms).toFixed(1)}× faster</b> for a filtered join and aggregate. The gain is smaller because most of the cost is grouping, which an index does not remove.`;
+
+
+// ---------- complexity explorer
+const CX=[['Hash or k-mer lookup','O(1)',n=>1],['Heap push or pop','O(log n)',n=>Math.log2(n)],['Linear scan','O(n)',n=>n],['Sort-based build','O(n log n)',n=>n*Math.log2(n)],['Full DP alignment','O(n²)',n=>n*n]];
+function cx(){const n=Math.pow(10,+$('cn').value||5);$('cnv').textContent=fN(Math.round(n));
+ $('cx').innerHTML=CX.map(c=>{const v=c[2](n);return`<div class="r"><span>${c[0]} <code>${c[1]}</code></span><div class="t"><i style="width:${Math.max(2,Math.log10(v+1)/14*100)}%"></i></div><span class="v">${v<1e4?Math.round(v).toLocaleString():v.toExponential(1)} · ${fT(v/1e8*1000)}</span></div>`}).join('')}
+$('cn').addEventListener('input',cx);cx();
+// ---------- break-even explorer
+$('bsz').innerHTML=S.map((r,i)=>`<option value="${i}"${i==S.length-1?' selected':''}>${fN(r.n)} bases</option>`).join('');
+function bev(){const r=S[Math.max(0,Math.min(S.length-1,+$('bsz').value||0))],qs=[1,2,5,10,20,50,100,200,500,1000];
+ chart('be',{title:'Cumulative time',x:qs,xlog:1,ylog:1,yf:fT,xl:'Queries run',yl:'Cumulative time',series:[{n:'Scan every time',c:'s4',y:qs.map(q=>q*r.naive_ms)},{n:'Build index once, then look up',c:'s1',y:qs.map(q=>r.build_ms+q*r.lookup_ms)}]});
+ const b=r.build_ms/(r.naive_ms-r.lookup_ms);$('ben').innerHTML=`<b>Break-even at about ${Math.ceil(b)} queries.</b> After 1,000 queries the index has saved ${fT(1000*r.naive_ms-(r.build_ms+1000*r.lookup_ms))}.`}
+$('bsz').addEventListener('change',bev);bev();
+// ---------- live benchmark in the viewer's browser
+function barRows(rows,max,lin){const lo=-4,hi=Math.log10(max||1e4);return rows.map(r=>`<div class="r"><span>${r[0]}</span><div class="t"><i style="width:${Math.max(2,lin?r[1]/max*100:(Math.log10(r[1])-lo)/(hi-lo)*100)}%;background:var(--c${r[2]})"></i></div><span class="v">${fT(r[1])}</span></div>`).join('')}
+function live(){const n=+$('lsz').value||1e6,K=11,M=24,arr=new Uint8Array(n),tb=[65,67,71,84];let x=42;
+ for(let i=0;i<n;i++){x^=x<<13;x^=x>>>17;x^=x<<5;arr[i]=tb[(x>>>0)&3]}
+ const s=new TextDecoder().decode(arr),p=Math.floor(n*.6),q=s.substr(p,M),qb=arr.subarray(p,p+M);
+ const best=(f,r)=>{let b=1e9;for(let i=0;i<r;i++){const t=performance.now();f();b=Math.min(b,performance.now()-t)}return b};
+ const naive=()=>{const out=[],q0=qb[0];for(let i=0;i<=n-M;i++){if(arr[i]!==q0)continue;let j=1;while(j<M&&arr[i+j]===qb[j])j++;if(j===M)out.push(i)}return out};
+ const tn=best(naive,5),t0=performance.now(),idx=new Map();
+ for(let i=0;i<=n-K;i++){const k=s.substr(i,K),a=idx.get(k);a?a.push(i):idx.set(k,[i])}
+ const tbld=performance.now()-t0,look=()=>(idx.get(q.slice(0,K))||[]).filter(p=>s.substr(p,M)===q);
+ const t1=performance.now();let hit;for(let i=0;i<20000;i++)hit=look();const tl=(performance.now()-t1)/20000;
+ const same=JSON.stringify(naive())===JSON.stringify(hit);
+ $('live').innerHTML=barRows([['Scan per query',tn,4],['Index build (once)',tbld,2],['Index lookup per query',tl,1]]);
+ const ref=S.find(r=>r.n===n);
+ $('lnote').innerHTML=`<b>Your device: the index is ${fX(tn/tl)}× faster per query</b> at ${fN(n)} bases${ref?`, against ${fX(ref.naive_ms/ref.lookup_ms)}× in the sandbox (Python)`:''}. Hardware and language change the absolute times; the gap between a scan and a lookup remains. Both methods returned ${same?'identical':'different'} matches.`}
+$('lrun').addEventListener('click',()=>{const b=$('lrun');b.disabled=true;$('live').innerHTML='<p class="note">Running…</p>';setTimeout(()=>{try{live()}finally{b.disabled=false}},40)});
+// ---------- alignment explorer
+function swx(){const cl=v=>v.toUpperCase().replace(/[^ACGT]/g,'').slice(0,14),a=cl($('sa').value),b=cl($('sb').value),m=+$('sm').value,mm=+$('sx').value,g=+$('sg').value;
+ $('smv').textContent='+'+m;$('sxv').textContent=mm;$('sgv').textContent=g;
+ if(!a||!b){$('heat').innerHTML='<p class="note">Enter bases A, C, G or T in both boxes.</p>';return}
+ const H=[],T=[];let best=0,bi=0,bj=0;
+ for(let i=0;i<=a.length;i++){H.push(Array(b.length+1).fill(0));T.push(Array(b.length+1).fill(0))}
+ for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){const d=H[i-1][j-1]+(a[i-1]===b[j-1]?m:mm),u=H[i-1][j]+g,l=H[i][j-1]+g,v=Math.max(0,d,u,l);H[i][j]=v;T[i][j]=v===0?0:v===d?1:v===u?2:3;if(v>best){best=v;bi=i;bj=j}}
+ const path=new Set();let i=bi,j=bj,ra='',rb='',rm='';
+ while(i>0&&j>0&&H[i][j]>0){path.add(i+','+j);const t=T[i][j];
+  if(t===1){ra=a[i-1]+ra;rb=b[j-1]+rb;rm=(a[i-1]===b[j-1]?'|':'x')+rm;i--;j--}else if(t===2){ra=a[i-1]+ra;rb='-'+rb;rm=' '+rm;i--}else{ra='-'+ra;rb=b[j-1]+rb;rm=' '+rm;j--}}
+ let h='<table class="h"><tr><th></th><th></th>'+[...b].map(c=>`<th>${c}</th>`).join('')+'</tr>';
+ for(let r=0;r<=a.length;r++){h+=`<tr><th>${r?a[r-1]:''}</th>`;for(let c=0;c<=b.length;c++){const v=H[r][c];h+=`<td class="${path.has(r+','+c)?'pa':''}" style="background:color-mix(in srgb,var(--c1) ${Math.round(v/(best||1)*72)}%,var(--tint))" title="${v}">${v}</td>`}h+='</tr>'}
+ $('heat').innerHTML=h+'</table>';
+ $('hn').innerHTML=`<b>Best local score ${best}</b> from ${a.length*b.length} scored cells (${a.length} × ${b.length}). The outlined path is the traceback; shading shows score.<div class="al">${ra}\n${rm}\n${rb}</div>`}
+['sa','sb','sm','sx','sg'].forEach(k=>$(k).addEventListener('input',swx));swx();
+// ---------- sandbox
+const TL=[
+ ['CPU',`${D.env.cpus} logical CPU`,'Parallel hardware is absent, so tasks can only take turns on the single core. That is why the multi-worker schedules in the scheduler section are simulated from measured task durations, not timed live.',0],
+ ['Language',`Python ${D.env.python}`,`All search, alignment and scheduling code runs as pure Python on ${D.env.platform}. Interpreter overhead raises absolute times, so read the growth shapes, not the raw milliseconds.`,0],
+ ['Database','SQLite, in memory','Used for the database charts. It supports the same indexes and joins, so the scan-against-index contrast carries over, but absolute times differ from a PostgreSQL server.',0],
+ ['PostgreSQL','not installed','A shell check for the server binaries found none, which is why SQLite stands in. Re-run bench.py against your PostgreSQL instance to replace those charts.',1],
+ ['Output','results.json','The program writes every measurement to one JSON file, which this page reads. Nothing on the charts is typed in by hand.',0]];
+let tsel=0;
+function box(){const W=900,H=150;let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sandbox components">`;
+ TL.forEach((t,i)=>{const x=10+i*178;s+=`<g class="tile${i===tsel?' on':''}${t[3]?' no':''}" tabindex="0" role="button" onclick="pick(${i})" onkeydown="if(event.key==='Enter')pick(${i})"><rect x="${x}" y="10" width="166" height="130" rx="10"/><text x="${x+83}" y="52" text-anchor="middle" style="font-weight:600;font-size:16px;fill:var(--ink)">${t[0]}</text><text x="${x+83}" y="86" text-anchor="middle" style="font-size:14px">${t[1]}</text><text x="${x+83}" y="118" text-anchor="middle" style="font-size:12px;fill:var(--c1)">${t[3]?'missing: click':'click for details'}</text></g>`});
+ $('box').innerHTML=s+'</svg>';$('boxd').innerHTML=`<b>${TL[tsel][0]}.</b> ${TL[tsel][2]}`}
+function pick(i){tsel=i;box()}box();
+// ---------- one core, many workers
+function rw(){const w=+$('rw').value;$('rwv').textContent=w;const mk=sched(WF.nodes,w).make;
+ $('rb').innerHTML=barRows([['Real run on 1 CPU',total,4],[`Simulated on ${w} cores`,mk,1],['Perfect scaling',total/w,3]],total,1);
+ $('rn').innerHTML=`<b>On one core the tasks take turns,</b> so wall time equals the serial total (${fT(total)}); this bar is expected from that constraint, not timed separately. The simulation replays the same measured durations on ${w} cores using the scheduler's longest-first rule and finishes in ${fT(mk)}.`}
+$('rw').addEventListener('input',rw);rw();
+// ---------- pipeline stepper
+const bc=['s1','s2','s3','s6'];
+function strip(){let x=7,o='';for(let i=0;i<48;i++){x^=x<<13;x^=x>>>17;x^=x<<5;const k=(x>>>0)&3;o+=`<span class="b" style="background:var(--c${[1,2,3,6][k]})">${'ACGT'[k]}</span>`}return o}
+function windows(){const q='GATTACAGATTA',K=4,m={};let o='<div class="al">'+q+'\n';for(let i=0;i<=q.length-K;i++){const k=q.substr(i,K);(m[k]=m[k]||[]).push(i);o+=' '.repeat(i)+k+'\n'}
+ o+='</div><p class="note" style="margin-top:8px">Index: '+Object.entries(m).filter(e=>e[1].length>1).map(e=>e[0]+' → '+e[1].join(', ')).join('; ')+' (repeated k-mers); every other k-mer occurs once.</p>';return o}
+function schem(kind){const a=`<svg viewBox="0 0 400 120" role="img" aria-label="${kind} schematic">`;
+ if(kind==='time')return a+[0,1,2].map(i=>`<rect x="${14+i*96}" y="22" width="80" height="36" rx="6" fill="var(--tint)" stroke="var(--line)"/><text x="${54+i*96}" y="45" text-anchor="middle">run ${i+1}</text>`).join('')+`<path d="M 200 70 L 200 92" stroke="var(--c1)" stroke-width="2.4"/><rect x="140" y="92" width="120" height="24" rx="6" fill="var(--c1)"/><text x="200" y="109" text-anchor="middle" style="fill:var(--panel);font-weight:600">keep the minimum</text></svg>`;
+ return a+`<path d="M 14 100 C 80 100 100 30 170 30 C 240 30 260 100 386 100" fill="none" stroke="var(--c2)" stroke-width="2.6"/><line x1="170" y1="30" x2="170" y2="108" stroke="var(--line)" stroke-dasharray="4 3"/><circle cx="170" cy="30" r="5" fill="var(--c2)"/><text x="182" y="26">peak: the number reported</text><text x="14" y="116">allocation over the run</text></svg>`}
+function tree(){const ks=Object.keys(D),cnt=k=>Array.isArray(D[k])?D[k].length:((Object.values(D[k]).find(Array.isArray)||[]).length||Object.keys(D[k]).length);
+ const mx=Math.max(...ks.map(cnt));return '<div class="bars">'+ks.map(k=>`<div class="r" style="grid-template-columns:110px 1fr 70px"><code>${k}</code><div class="t"><i style="width:${cnt(k)/mx*100}%;background:var(--c3)"></i></div><span class="v">${cnt(k)}</span></div>`).join('')+'</div>'}
+const ST=[
+ ['Generate','Each test uses uniform random DNA from a fixed seed, so every run sees identical input and results can be repeated exactly.',"random.seed(42)\ndef dna(n):\n    return ''.join(random.choices('ACGT', k=n))",()=>`<div>${strip()}</div><p class="note" style="margin-top:8px">A sample of the kind of input generated (illustrative).</p>`],
+ ['Implement','Each technique is written in plain Python, so the cost of every step is visible and nothing hides inside a library.',"def build(s, k=11):\n    d = defaultdict(list)\n    for i in range(len(s) - k + 1):\n        d[s[i:i+k]].append(i)\n    return d",windows],
+ ['Time','Each operation is repeated and the fastest repetition is kept, which discards slowdowns caused by other activity on the machine.',"def timeit(f, rep=3):\n    best = 1e9\n    for _ in range(rep):\n        t = time.perf_counter(); f()\n        best = min(best, time.perf_counter() - t)",()=>schem('time')],
+ ['Meter memory','Peak allocation comes from Python\'s tracemalloc, which tracks memory the program itself requests.',"tracemalloc.start(); r = f()\n_, peak = tracemalloc.get_traced_memory()\ntracemalloc.stop()",()=>schem('mem')],
+ ['Verify','Every comparison asserts that the methods agree before any time is recorded, so a fast wrong answer cannot enter the results.',"assert a == b   # scan and index: same hits\nassert r1 == r2 # full matrix and two rows: same score\nassert len(order) == n  # every task scheduled",()=>'<ul style="margin:0;padding-left:1.1em"><li>Scan and index return identical positions</li><li>Both alignment variants return the same score</li><li>Every task appears once in the schedule</li></ul><p class="note" style="margin-top:8px">The program stops with an error if any check fails; it ran to completion.</p>'],
+ ['Record and render','All measurements go into one JSON file that this page reads. The chart below counts the records in each section of that file.',"json.dump(R, sys.stdout)",tree]];
+let sti=0;
+function st(i){sti=i;$('tabs').innerHTML=ST.map((s,k)=>`<button role="tab" aria-selected="${k===i}" onclick="st(${k})">${k+1}. ${s[0]}</button>`).join('');
+ const s=ST[i];$('step').innerHTML=`<div><h3>${s[0]}</h3><p>${s[1]}</p><pre>${s[2].replace(/</g,'&lt;')}</pre></div><div>${s[3]()}</div>`}
+st(0);
+// ---------- provenance
+const PV=[['Query latency, break-even, index memory, k sweep','Timed and metered directly by the benchmark program','m'],['Prefix search','Timed directly; trie, sorted array and scan on the same data','m'],['Alignment time and memory','Timed and metered directly','m'],['Task durations in the workflow','Real alignments sized to each stage, timed directly','m'],['Scheduler ordering overhead','Topological sort with a priority queue, timed directly','m'],['Database charts','Run on SQLite because PostgreSQL is not installed in the sandbox','s'],['Multi-worker schedules and speedup','Replayed from measured durations; the sandbox has one CPU','sim'],['K-mer occurrence counts, seed sensitivity, trie depth, alignment score distributions','Measured by bench_extra.py on random data with a fixed seed','m'],['Query length, hash table, heap, memory, write throughput and repeat-run variation','Measured by bench_more.py; the write test uses a file-backed SQLite database','m'],['Scheduling-policy comparison','Replayed from measured task durations under three ordering rules','sim'],['Query plans','Read from the database with EXPLAIN QUERY PLAN, before and after indexing','s'],['Throughput, utilization, stage breakdown, critical path','Computed from the measured results above, with no new timing','d'],['Live benchmark above','Runs in your browser, on your hardware','y']];
+const PL={m:'Measured',s:'Substituted',sim:'Simulated',d:'Derived',y:'Your device'};let pf='all';
+function chip(k){pf=k;$('chips').innerHTML=['all','m','s','sim','d','y'].map(c=>`<button role="tab" aria-selected="${c===pf}" onclick="chip('${c}')">${c==='all'?'All':PL[c]}</button>`).join('');
+ $('prov').innerHTML=PV.filter(r=>pf==='all'||r[2]===pf).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><span class="bd ${r[2]}">${PL[r[2]]}</span></td></tr>`).join('')}
+chip('all');
+
+// ---------- more views
+chart('qps',{title:'Queries per second',x:xs,xlog:1,ylog:1,xf:fN,yf:v=>fX(v),xl:'Reference length (bases)',yl:'Queries per second',series:[{n:'Scan',c:'s4',y:S.map(r=>1000/r.naive_ms)},{n:'Index lookup',c:'s1',y:S.map(r=>1000/r.lookup_ms)}]});
+$('qpsn').innerHTML=`<b>At ${fN(last.n)} bases the index serves ${fX(1000/last.lookup_ms)} queries per second,</b> against ${fX(1000/last.naive_ms)} for a scan. Scan throughput falls as the reference grows; lookup throughput does not.`;
+const KD=D.kdist;
+chart('kd',{title:'Occurrences per k-mer',type:'bar',x:KD[0].hist.map((_,i)=>i<11?i+1:'12+'),yf:v=>fX(v),xl:'Positions where the k-mer occurs',yl:'Distinct k-mers',series:KD.map((d,i)=>({n:'k = '+d.k,c:i?'s1':'s2',y:d.hist}))});
+$('kdn').innerHTML=`<b>Short k-mers repeat by chance:</b> at k=${KD[0].k} the average k-mer occurs ${KD[0].mean.toFixed(1)} times in a 300k-base reference, at k=${KD[1].k} only ${KD[1].mean.toFixed(2)}. Every extra occurrence is a candidate that must be checked.`;
+(function(){const Z=D.seed,pc=r=>Math.round(r*100)+'%';
+ let h='<table class="h h2"><tr><th>k</th>'+Z.rates.map(r=>`<th>${pc(r)} mutated</th>`).join('')+'<th>Candidates per seed</th></tr>';
+ Z.ks.forEach((k,i)=>{h+=`<tr><th>${k}</th>`+Z.recov[i].map((v,j)=>`<td style="background:color-mix(in srgb,var(--c3) ${Math.round(v)}%,var(--tint))" title="k=${k}, ${pc(Z.rates[j])} of bases mutated: ${v}% of queries found">${Math.round(v)}%</td>`).join('')+`<td title="Average positions returned per query k-mer">${fX(Z.cand[i])}</td></tr>`});
+ $('seed').innerHTML=h+'</table>';
+ const a=Z.ks.indexOf(8),b=Z.ks.indexOf(14),c=Z.rates.indexOf(.1);
+ $('seedn').innerHTML=`<b>Short seeds tolerate mutation but return many candidates; long seeds are precise but fragile.</b> With 10% of bases mutated, k=${Z.ks[a]} still finds ${Math.round(Z.recov[a][c])}% of ${Z.query_len}-base queries while k=${Z.ks[b]} finds ${Math.round(Z.recov[b][c])}%, yet k=${Z.ks[a]} returns ${fX(Z.cand[a])} candidates per seed against ${fX(Z.cand[b])}. A hit means at least one query k-mer matched the true location, from ${Z.trials} trials per cell on a ${fN(Z.ref_len)}-base reference.`})();
+const TD=D.trie_depth,tdx=TD.nodes.map((_,i)=>i+1),sat=TD.nodes.findIndex(v=>v>=TD.n*.99)+1;
+chart('td',{title:'Trie nodes per depth',x:tdx,ylog:1,yf:fX,xl:'Depth (characters into the sequence)',yl:'Nodes at that depth',series:[{n:'Nodes in the trie',c:'s1',y:TD.nodes},{n:'Upper bound: min(4^depth, sequences)',c:'s4',d:1,nodots:1,y:tdx.map(d=>Math.min(Math.pow(4,d),TD.n))}]});
+$('tdn').innerHTML=`<b>The trie branches fully for the first few levels, then splits into single chains.</b> With ${fN(TD.n)} random sequences it reaches one node per sequence by depth ${sat}; the remaining ${TD.length-sat} levels are ${fN(TD.n)} separate paths, which is where most of its memory goes. Real genomic data may share longer prefixes than this random case, which would let a trie compress better.`;
+const AD=D.align_dist,bins=AD[0].hist.map((_,i)=>i*10);
+chart('ad',{title:'Alignment scores',type:'bar',x:bins,xf:v=>v%20===0?v:'',yf:v=>fX(v),xl:'Local alignment score (bins of 10)',yl:'Sequence pairs',series:AD.map((d,i)=>({n:d.name,c:['s4','s1','s3','s2'][i],y:d.hist}))});
+$('adn').innerHTML=`<b>Alignment separates related from unrelated sequences.</b> Mean score falls from ${AD[1].mean.toFixed(0)} at 10% mutation to ${AD[3].mean.toFixed(0)} at 50%, against ${AD[0].mean.toFixed(0)} for unrelated pairs. Heavily diverged pairs begin to overlap with chance scores, so a significance threshold is needed. 150 pairs of 100 bases per class.`;
+chart('cps',{title:'Cells per second',x:ax,yf:v=>v.toFixed(1)+' M',xl:'Sequence length (both sequences)',yl:'Million matrix cells per second',series:[{n:'Full matrix',c:'s3',y:A.map(r=>r.cells/(r.full_ms*1000))},{n:'Two rows',c:'s1',y:A.map(r=>r.cells/(r.two_ms*1000))}]});
+$('cpsn').innerHTML=`<b>A steady rate confirms the quadratic cost:</b> the two-row version fills about ${(A.reduce((a,r)=>a+r.cells/(r.two_ms*1000),0)/A.length).toFixed(1)} million cells per second at every length, so time is simply cells divided by rate.`;
+const stT=stages.map(s=>WF.nodes.filter(n=>n.stage===s).reduce((a,n)=>a+n.dur_ms,0)),mxs=stT.indexOf(Math.max(...stT));
+chart('stb',{title:'Time by stage',type:'bar',x:stages,yf:fT,xl:'Workflow stage',yl:'Total task time',series:[{n:'Serial time',c:'s5',y:stT}]});
+$('stbn').innerHTML=`<b>The ${stages[mxs]} stage holds ${Math.round(100*stT[mxs]/total)}% of the serial work</b> (${fT(stT[mxs])} of ${fT(total)}), so it decides how much extra workers can help.`;
+chart('ut',{title:'Worker utilization',x:WS,yf:v=>Math.round(v)+'%',xl:'Workers',yl:'Share of worker time busy',series:[{n:'Utilization',c:'s6',y:WS.map((w,i)=>100*sp[i]/w)}]});
+$('utn').innerHTML=`<b>Utilization falls from 100% to ${Math.round(100*sp[sp.length-1]/12)}%</b> as workers are added, because later stages cannot start until earlier ones finish. Extra workers buy speed at the cost of idle time.`;
+const PLN=D.plans;let pqk='filter';
+function pq(k){pqk=k;$('pq').innerHTML=[['filter','Filter by sample'],['join','Join with filter']].map(c=>`<button role="tab" aria-selected="${c[0]===k}" onclick="pq('${c[0]}')">${c[1]}</button>`).join('');
+ $('sqlq').textContent=PLN.sql[k];
+ const col=(t,lines)=>`<div><h3>${t}</h3>${lines.map(l=>{const sc=/^SCAN/.test(l),se=/^SEARCH/.test(l);return`<div class="al" style="margin-top:6px;border-left:4px solid var(--c${sc?2:se?3:4})">${l.replace(/</g,'&lt;')}</div><p class="note" style="margin:2px 0 8px">${sc?'Reads every row in the table':se?'Jumps straight to matching rows':'Builds a temporary structure to group results'}</p>`}).join('')}</div>`;
+ $('plan').innerHTML=col('Without an index',PLN[k].scan)+col('With an index',PLN[k].index);
+ $('pln').innerHTML=`<b>The plan changes shape, not just speed.</b> Orange steps read every row; green steps use a key or index to go straight to the rows they need. Plans come from SQLite&rsquo;s EXPLAIN QUERY PLAN on a 20,000-row table.`}
+pq('filter');
+
+// ---------- even more data
+const QL=D.qlen,KM=D.kmem,DS=D.dictscale,MC=D.memcmp,HP=D.heap,DW=D.dbwrite,V=D.variance;
+chart('ql',{title:'Query length',x:QL.map(r=>r.m),xlog:1,ylog:1,yf:fT,xl:'Query length (bases)',yl:'Time per query',series:[{n:'Scan',c:'s4',y:QL.map(r=>r.scan_ms)},{n:'Index lookup',c:'s1',y:QL.map(r=>r.lookup_ms)}]});
+$('qln').innerHTML=`<b>Query length barely changes either method.</b> The scan took ${fT(QL[0].scan_ms)} at ${QL[0].m} bases and ${fT(QL[QL.length-1].scan_ms)} at ${QL[QL.length-1].m}, because most positions fail on the first character. The index uses one k-mer to find candidates, then checks them. 300k-base reference.`;
+chart('km',{title:'Index memory against k',type:'bar',x:KM.map(r=>r.k),yf:v=>Math.round(v)+' MB',xl:'k',yl:'Peak memory',series:[{n:'Index',c:'s6',y:KM.map(r=>r.mb)}]});
+$('kmn').innerHTML=`<b>Memory rises from ${KM[0].mb.toFixed(0)} MB at k=${KM[0].k} to ${KM[KM.length-1].mb.toFixed(0)} MB at k=${KM[KM.length-1].k}</b> and levels off once nearly every k-mer is unique, because the index then holds about one key per position. 300k-base reference.`;
+chart('ds',{title:'Hash table lookup',x:DS.map(r=>r.n),xlog:1,xf:fN,yf:v=>Math.round(v)+' ns',xl:'Keys in the table',yl:'Time per lookup',series:[{n:'Lookup',c:'s3',y:DS.map(r=>r.ns)}]});
+$('dsn').innerHTML=`<b>A lookup costs about ${Math.round(DS[0].ns)} ns in small tables and ${Math.round(DS[DS.length-1].ns)} ns at ${fN(DS[DS.length-1].n)} keys.</b> It stays constant in operations but slows in wall time as the table outgrows the processor cache.`;
+chart('mc',{title:'Memory added',type:'bar',x:MC.map(r=>r.name),ylog:1,yf:v=>(+v.toPrecision(2))+' MB',xl:'Structure over 20,000 sequences of 32 bases',yl:'Extra memory',series:[{n:'Added memory',c:'s5',y:MC.map(r=>r.mb)}]});
+const mcT=MC.find(r=>r.name==='Trie'),mcH=MC.find(r=>r.name==='Hash table');
+$('mcn').innerHTML=`<b>The trie adds ${fX(mcT.mb/mcH.mb)}× the memory of a hash table</b> for the same sequences (${mcT.mb.toFixed(0)} MB against ${mcH.mb.toFixed(1)} MB). Each node here is a Python dictionary; a compact array-based trie would be far smaller. Figures count memory beyond the sequence strings themselves.`;
+chart('hp',{title:'Priority queue',x:HP.map(r=>r.n),xlog:1,xf:fN,yf:v=>v.toFixed(1)+' µs',xl:'Tasks in the queue',yl:'Time per push and pop',series:[{n:'Push and pop',c:'s2',y:HP.map(r=>r.us)}]});
+$('hpn').innerHTML=`<b>A ${fN(HP[HP.length-1].n/HP[0].n)}-fold larger queue costs only ${(HP[HP.length-1].us/HP[0].us).toFixed(1)}× more per operation,</b> consistent with logarithmic growth plus cache effects.`;
+const PW=[2,4,8],PO=[['Longest first','lpt','s1'],['Shortest first','spt','s2'],['First come','fifo','s4']];
+const PD=PO.map(p=>PW.map(w=>sched(WF.nodes,w,p[1]).make));
+chart('pol',{title:'Scheduling policy',type:'bar',x:PW,xf:v=>v+' workers',yf:fT,xl:'Workers',yl:'Finishing time',series:PO.map((p,i)=>({n:p[0],c:p[2],y:PD[i]}))});
+const spread=Math.max(...PW.map((_,j)=>{const c=PD.map(r=>r[j]);return(Math.max(...c)-Math.min(...c))/Math.min(...c)}));
+$('poln').innerHTML=`<b>On this workflow the three ordering rules finish within ${(spread*100).toFixed(0)}% of each other.</b> Tasks inside a stage have similar lengths, so the stage structure, not the ordering rule, sets the finishing time. Ordering matters more when task lengths differ widely.`;
+chart('dw',{title:'Write throughput',type:'bar',x:DW.map(r=>r.name),ylog:1,yf:fX,xl:'Insert strategy',yl:'Rows inserted per second',series:[{n:'Rows per second',c:'s3',y:DW.map(r=>r.per_s)}]});
+$('dwn').innerHTML=`<b>Batching rows into one transaction was ${fX(DW[1].per_s/DW[0].per_s)}× faster than committing each row</b> (${fX(DW[1].per_s)} against ${fX(DW[0].per_s)} rows per second). Two indexes cut throughput by ${Math.round(100*(1-DW[2].per_s/DW[1].per_s))}% because every insert also updates them: indexes speed reads and slow writes. File-backed SQLite; ${fN(DW[0].rows)} rows for the per-row test, ${fN(DW[1].rows)} for the others.`;
+const vs=Math.min(...V.scan_ms),vl=Math.min(...V.lookup_ms);
+chart('vr',{title:'Run-to-run variation',x:V.scan_ms.map((_,i)=>i+1),yf:v=>v.toFixed(1)+'×',xl:'Repeat number',yl:'Time relative to the fastest repeat',series:[{n:'Scan',c:'s4',y:V.scan_ms.map(v=>v/vs)},{n:'Index lookup',c:'s1',y:V.lookup_ms.map(v=>v/vl)}]});
+$('vrn').innerHTML=`<b>Repeats differ.</b> Across ${V.runs} runs at ${fN(V.n)} bases the slowest scan took ${(Math.max(...V.scan_ms)/vs).toFixed(1)}× the fastest and the slowest lookup ${(Math.max(...V.lookup_ms)/vl).toFixed(1)}×, so every figure keeps the fastest of several repeats.${vs<S[S.length-1].naive_ms*.9?` The fastest scan here (${fT(vs)}) is also quicker than the earlier ${fN(V.n)}-base figure (${fT(S[S.length-1].naive_ms)}), showing that the sandbox's speed drifts between runs. Trust the ratios and growth shapes more than absolute times.`:''}`;
+
+// ---------- links
+(function(){const ok=v=>v&&!v.startsWith('YOUR_'),gh=ok(GITHUB)?GITHUB:null;
+ const L=[['Streamlit workbench',ok(STREAMLIT_URL)?STREAMLIT_URL:null,'Run the system on your own data'],
+  ['Colab notebook',gh&&`https://colab.research.google.com/github/${gh}/blob/main/notebooks/genomequery_colab.ipynb`,'Open in Google Colab; nothing to install'],
+  ['Jupyter notebook',gh&&`https://github.com/${gh}/blob/main/notebooks/genomequery.ipynb`,'Run locally against the engine'],
+  ['Source code',gh&&`https://github.com/${gh}`,'Site, workbench, notebooks and benchmarks']];
+ $('links').innerHTML=L.map(l=>l[1]?`<a class="lk" href="${l[1]}" target="_blank" rel="noopener"><b>${l[0]} &rarr;</b><span>${l[2]}</span></a>`:`<div class="lk off"><b>${l[0]}</b><span>Link not set yet: run set_links.py</span></div>`).join('')})();
+</script>
+</body>
+</html>
